@@ -1,0 +1,57 @@
+type LoginRequest {
+	Username string `json:"userName"`
+	Password string `json:"password"`
+}
+
+type LoginResponse {
+	Token string `json:"token"`
+}
+
+type OpenLoginResponse {
+	Name string `json:"name"`
+	Ican string `json:"ican"`
+	Href string `json:"href"` //跳转地址
+}
+
+type OpenLoginRequest {
+	Code string `json:"code"` //验证码
+	Flag string `json:"flag"` //登录的标志
+}
+
+type AuthenticationRequest {
+	Token     string `header:"Token,optional"`
+	ValidPath string `header:"ValidPath,optional"`
+}
+
+type AuthenticationResponse {
+	UserID int64 `json:"userID"`
+	Role   int   `json:"role"`
+}
+
+type RegisterRequest {
+	Username string `json:"nickname"`
+	Pwd      string `json:"pwd"`
+}
+
+type RegisterResponse {}
+
+service auth {
+	@handler login
+	post /api/auth/login (LoginRequest) returns (LoginResponse)
+
+	@handler authentication
+	post /api/auth/authentication (AuthenticationRequest) returns (AuthenticationResponse)
+
+	@handler open_login_info
+	get /api/auth/open_login_info returns ([]OpenLoginResponse)//第三方登录信息
+
+	@handler open_login //第三方登录
+	post /api/auth/open_login (OpenLoginRequest) returns (LoginResponse)
+
+	@handler logout //注销
+	post /api/auth/logout returns (string)
+
+	@handler register
+	post /api/auth/register (RegisterRequest) returns (RegisterResponse)
+} //goctl api go -api auth_api.api -dir . --home ../../template
+
