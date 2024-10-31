@@ -50,7 +50,7 @@ func GetFilePrefix(filename string) (prefix string) {
 }
 
 // 去重
-func DeduplicatoionList[T string | int | uint](req []T) (response []T) {
+func DeduplicatoionList[T string | int | uint | uint32](req []T) (response []T) {
 	i32map := make(map[T]bool)
 	for _, v := range req {
 		if !i32map[v] {

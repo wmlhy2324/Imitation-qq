@@ -2,12 +2,14 @@ package logic
 
 import (
 	"context"
+	"errors"
 	"lhyim_server/common/list_query"
 	"lhyim_server/common/models"
 	"lhyim_server/common/models/ctype"
 	"lhyim_server/lhyim_chat/chat_api/internal/svc"
 	"lhyim_server/lhyim_chat/chat_api/internal/types"
 	"lhyim_server/lhyim_chat/chat_models"
+	"lhyim_server/lhyim_user/user_rpc/types/user_rpc"
 	"lhyim_server/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -51,27 +53,49 @@ func (l *ChatHistoryLogic) ChatHistory(req *types.ChatHistoryRequest) (resp *Cha
 	chatList, count, _ := list_query.ListQuery(l.svcCtx.DB, chat_models.ChatModel{},
 		list_query.Option{
 			PageInfo: models.PageInfo{
+				Sort:  "created_at desc",
 				Page:  req.Page,
 				Limit: req.Limit,
 			},
 			Where: l.svcCtx.DB.Where("send_user_id = ? or recv_user_id = ?", req.UserID, req.UserID),
 		})
-	var userIDList []uint
+	var userIDList []uint32
 	for _, model := range chatList {
-		userIDList = append(userIDList, model.SendUserID)
-		userIDList = append(userIDList, model.RecvUserID)
+		userIDList = append(userIDList, uint32(model.SendUserID))
+		userIDList = append(userIDList, uint32(model.RecvUserID))
 	}
 	//去重
 	userIDList = utils.DeduplicatoionList(userIDList)
 	//去调用户服务的rpc方法，获取用户信息
+	response, err := l.svcCtx.UserRpc.UserListInfo(context.Background(), &user_rpc.UserListInfoRequest{UserIdList: userIDList})
+	if err != nil {
+		logx.Error(err)
+		return nil, errors.New("用户服务错误")
+	}
 	var list = make([]ChatHistory, 0)
 	for _, model := range chatList {
-		list = append(list, ChatHistory{
+		sendUser := UserInfo{
+			ID:       model.SendUserID,
+			Nickname: response.UserInfo[uint32(model.SendUserID)].NickName,
+			Avatar:   response.UserInfo[uint32(model.SendUserID)].Avatar,
+		}
+		revUser := UserInfo{
+			ID:       model.RecvUserID,
+			Nickname: response.UserInfo[uint32(model.RecvUserID)].NickName,
+			Avatar:   response.UserInfo[uint32(model.RecvUserID)].Avatar,
+		}
+		info := ChatHistory{
 			ID:        model.ID,
-			CreateAt:  model.CreatedAt,
+			SendUser:  sendUser,
+			RevUser:   revUser,
+			CreateAt:  model.CreatedAt.String(),
 			Msg:       model.Msg,
 			SystemMsg: model.SystemMsg,
-		})
+		}
+		if info.SendUser.ID == req.UserID {
+			info.IsMe = true
+		}
+		list = append(list, info)
 	}
 	resp = &ChatHistoryResponse{
 		Count: count,
