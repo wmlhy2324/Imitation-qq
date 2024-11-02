@@ -12,6 +12,7 @@ type Option struct {
 	Join     string
 	Likes    []string
 	Preload  []string
+	Table    func() (string, any)
 }
 
 func ListQuery[T any](db *gorm.DB, model T, option Option) (list []T, count int64, err error) {
@@ -27,6 +28,10 @@ func ListQuery[T any](db *gorm.DB, model T, option Option) (list []T, count int6
 
 		}
 		query.Where(likeQuery)
+	}
+	if option.Table != nil {
+		table, date := option.Table()
+		query = query.Table(table, date)
 	}
 	if option.Join != "" {
 		query = query.Joins(option.Join)
