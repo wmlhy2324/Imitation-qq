@@ -15,6 +15,14 @@ type ChatHistoryResponse struct {
 	CreateAt string `json:"createAt"`
 }
 
+type ChatSession struct {
+	UserID     uint   `json:"userId"`
+	Avatar     string `json:"avatar"`
+	Nickname   string `json:"nickname"`
+	CreateAt   string `json:"createAt"`   //消息时间
+	MsgPreview string `json:"msgPreview"` //消息预览
+}
+
 type ChatSessionRequest struct {
 	UserID uint `header:"User-ID"`
 	Page   int  `form:"page"`
@@ -23,9 +31,6 @@ type ChatSessionRequest struct {
 }
 
 type ChatSessionResponse struct {
-	UserID     uint   `json:"userId"`
-	Avatar     string `json:"avatar"`
-	Nickname   string `json:"nickname"`
-	CreateAt   string `json:"createAt"`   //消息时间
-	MsgPreview string `json:"msgPreview"` //消息预览
+	List  []ChatSession `json:"list"`
+	Count int64         `json:"count"`
 }

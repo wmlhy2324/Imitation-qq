@@ -13,6 +13,7 @@ type Option struct {
 	Likes    []string
 	Preload  []string
 	Table    func() (string, any)
+	Groups   []string //分组
 }
 
 func ListQuery[T any](db *gorm.DB, model T, option Option) (list []T, count int64, err error) {
@@ -54,6 +55,11 @@ func ListQuery[T any](db *gorm.DB, model T, option Option) (list []T, count int6
 	}
 	if option.PageInfo.Sort != "" {
 		query = query.Order(option.PageInfo.Sort)
+	}
+	if len(option.Groups) > 0 {
+		for _, group := range option.Groups {
+			query = query.Group(group)
+		}
 	}
 	offset := (option.PageInfo.Page - 1) * option.PageInfo.Limit
 
