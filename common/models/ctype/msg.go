@@ -57,10 +57,14 @@ type AtMsg struct {
 	Content string `json:"content"` //回复消息
 	Msg     *Msg   `json:"msg"`     //原消息
 }
+type TextMsg struct {
+	Content string `json:"content"`
+	Src     string `json:"src"`
+}
 
 type Msg struct {
 	Type         uint          `json:"type"`         //消息类型 1文字消息 2图片消息 3视频消息 4文件消息 5语音消息 6语言通话 7视频童话 8撤回消息 9回复消息 10引用消息
-	Content      *string       `json:"content"`      //文字消息
+	TextMsg      *TextMsg      `json:"textMsg"`      //文字消息
 	ImageMsg     *ImageMsg     `json:"imageMsg"`     //图片消息
 	VideoMsg     *VideoMsg     `json:"videoMsg"`     //视频消息
 	FileMsg      *FileMsg      `json:"fileMsg"`      //文件消息

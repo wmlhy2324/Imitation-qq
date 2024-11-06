@@ -14,3 +14,43 @@ type ChatModel struct {
 	Msg        ctype.Msg        `json:"msg"`
 	SystemMsg  *ctype.SystemMsg `json:"systemMsg"` //系统提示
 }
+
+func (chat ChatModel) MsgPreviewMethod() string {
+	if chat.SystemMsg != nil {
+		switch chat.SystemMsg.Type {
+		case 1:
+			return "[系统消息]- 该消息涉黄,已被系统拦截"
+		case 2:
+			return "[系统消息]- 该消息涉恐,已被系统拦截"
+		case 3:
+			return "[系统消息]- 该消息涉证,已被系统拦截"
+		case 4:
+			return "[系统消息]- 该消息涉及不当言论,已被系统拦截"
+		}
+		return "[系统消息]"
+	}
+	switch chat.Msg.Type {
+	case 1:
+		return chat.Msg.TextMsg.Content
+	case 2:
+		return "[图片]"
+	case 3:
+		return "[视频]"
+	case 4:
+		return "[文件]"
+	case 5:
+		return "[语音]"
+	case 6:
+		return "[视频通话]"
+	case 7:
+		return "[撤回消息]"
+	case 8:
+		return "[回复消息]"
+	case 9:
+		return "[引用消息]"
+	case 10:
+		return "[@消息]"
+
+	}
+	return "[未知消息]"
+}

@@ -2,7 +2,10 @@ package logic
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"lhyim_server/common/models/ctype"
+	"lhyim_server/lhyim_chat/chat_rpc/chat"
 	"lhyim_server/lhyim_user/user_models"
 
 	"lhyim_server/lhyim_user/user_api/internal/svc"
@@ -43,6 +46,24 @@ func (l *ValidStatusLogic) ValidStatus(req *types.FriendValidStatusRequest) (res
 			SendUserID: friendverify.SendUserID,
 			RecvUserID: friendverify.RecvUserID,
 		})
+		//给对方发消息
+		msg := ctype.Msg{
+			Type: 1,
+			TextMsg: &ctype.TextMsg{
+				Content: "我们已经是好友了,快来一起聊天吧",
+			},
+		}
+		byteData, _ := json.Marshal(msg)
+		_, err := l.svcCtx.ChatRpc.UserChat(context.Background(), &chat.UserChatRequest{
+			SendUserId: uint32(friendverify.SendUserID),
+			RecvUserId: uint32(friendverify.RecvUserID),
+			Msg:        byteData,
+			SystemMsg:  nil,
+		})
+		if err != nil {
+			logx.Error(err)
+			return nil, err
+		}
 	case 2: //拒绝
 		friendverify.RecvStatus = 2
 	case 3: //忽略

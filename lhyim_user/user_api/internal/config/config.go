@@ -18,4 +18,5 @@ type Config struct {
 		DB       int
 	}
 	UserRpc zrpc.RpcClientConf
+	ChatRpc zrpc.RpcClientConf
 }

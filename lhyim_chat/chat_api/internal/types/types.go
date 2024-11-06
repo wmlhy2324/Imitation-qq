@@ -3,8 +3,8 @@ package types
 
 type ChatHistoryRequest struct {
 	UserID uint `header:"User-ID"`
-	Page   int  `form:"page"`
-	Limit  int  `form:"limit"`
+	Page   int  `form:"page,optional"`
+	Limit  int  `form:"limit,optional"`
 }
 
 type ChatHistoryResponse struct {
@@ -25,9 +25,9 @@ type ChatSession struct {
 
 type ChatSessionRequest struct {
 	UserID uint `header:"User-ID"`
-	Page   int  `form:"page"`
-	Limit  int  `form:"limit"`
-	Key    int  `form:"key"`
+	Page   int  `form:"page,optional"`
+	Limit  int  `form:"limit,optional"`
+	Key    int  `form:"key,optional"`
 }
 
 type ChatSessionResponse struct {

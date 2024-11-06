@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package chat_rpc;
+option go_package = "./chat_rpc";
+
+
+message UserChatRequest{
+  uint32  send_user_id = 1;
+  uint32 recv_user_id = 2;
+  bytes msg = 3 ;//msg的json格式
+  bytes system_msg = 4;//系统消息
+}
+message UserChatResponse{
+
+}
+service Chat {
+  rpc UserChat(UserChatRequest) returns(UserChatResponse);
+}
+// goctl rpc protoc chat_rpc.proto --go_out=./types --go-grpc_out=./types --zrpc_out=.
