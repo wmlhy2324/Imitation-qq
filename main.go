@@ -28,7 +28,7 @@ func main() {
 			&group_models.GroupMemberModel{},
 			&group_models.GroupVerifyModel{},
 			&group_models.GroupMsgModel{},
-			&chat_models.ChatModel{}, //置顶用户表
+			&chat_models.TopUserModel{}, //置顶用户表
 		)
 		if err != nil {
 			fmt.Println("表结构创建失败", err)

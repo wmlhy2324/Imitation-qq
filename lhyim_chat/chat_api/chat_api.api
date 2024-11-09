@@ -1,9 +1,10 @@
 syntax = "v1"
 
 type ChatHistoryRequest {
-	UserID uint `header:"User-ID"`
-	page   int  `form:"page,optional"`
-	limit  int  `form:"limit,optional"`
+	UserID   uint `header:"User-ID"`
+	page     int  `form:"page,optional"`
+	limit    int  `form:"limit,optional"`
+	FriendID uint `form:"friendId"`
 }
 
 type ChatHistoryResponse {
@@ -35,11 +36,21 @@ type ChatSessionResponse {
 	Count int64         `json:"count"`
 }
 
+type userTopRequest {
+	UserID   uint `header:"User-ID"`
+	FriendID uint `json:"friendId"`
+}
+
+type userTopResponse {}
+
 service chat {
 	@handler chatHistory
 	get /api/chat/history (ChatHistoryRequest) returns (ChatHistoryResponse) //聊天记录
 
 	@handler chatSession
 	get /api/chat/session (ChatSessionRequest) returns (ChatSessionResponse) //最近会话列表
+
+	@handler userTop
+	get /api/chat/usertop (userTopRequest) returns (userTopResponse)
 } //goctl api go -api chat_api.api -dir . --home ../../template
 
