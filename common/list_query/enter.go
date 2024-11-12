@@ -14,9 +14,13 @@ type Option struct {
 	Preload  []string
 	Table    func() (string, any)
 	Groups   []string //分组
+	Debug    bool
 }
 
 func ListQuery[T any](db *gorm.DB, model T, option Option) (list []T, count int64, err error) {
+	if option.Debug != false {
+		db = db.Debug()
+	}
 	query := db.Where(model) //把结构体自己的查询条件查了
 	if option.PageInfo.Key != "" && len(option.Likes) > 0 {
 		likeQuery := db.Where("")
@@ -30,6 +34,7 @@ func ListQuery[T any](db *gorm.DB, model T, option Option) (list []T, count int6
 		}
 		query.Where(likeQuery)
 	}
+
 	if option.Table != nil {
 		table, date := option.Table()
 		query = query.Table(table, date)
