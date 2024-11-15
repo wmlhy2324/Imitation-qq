@@ -52,7 +52,7 @@ func (l *ChatSessionLogic) ChatSession(req *types.ChatSessionRequest) (resp *typ
 					"max(created_at) as maxDate",
 					fmt.Sprintf("(select msg_preview from chat_models where ((send_user_id = sU and recv_user_id = rU) or (send_user_id = rU and recv_user_id = sU)) and id not in (select chat_id from user_chat_delete_models where user_id = %d) order by created_at desc limit 1) as maxPreview", req.UserID),
 					column).
-				Where("(send_user_id = ? or recv_user_id = ?) and id not in (select chat_id from user_chat_deletes where user_id = ?)", req.UserID, req.UserID, req.UserID).
+				Where("(send_user_id = ? or recv_user_id = ?) and id not in (select chat_id from user_chat_delete_models where user_id = ?)", req.UserID, req.UserID, req.UserID).
 				Group("least(send_user_id, recv_user_id)").
 				Group("greatest(send_user_id, recv_user_id)")
 		},

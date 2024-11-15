@@ -1,65 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"io"
 	"lhyim_server/common/etcd"
+
+	"github.com/zeromicro/go-zero/core/conf"
+
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"regexp"
 	"strings"
 )
-
-type Proxy struct{}
-
-func (Proxy) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	//匹配请求前缀
-	regex, _ := regexp.Compile(`/api/(.*?)/`)
-	addrList := regex.FindStringSubmatch(req.URL.Path)
-
-	if len(addrList) != 2 {
-		failResponse(res, "err path not found")
-		return
-	}
-	service := addrList[1]
-	addr := etcd.GetServiceAddr(config.Etcd, service+"_api")
-	if addr == "" {
-		fmt.Println("服务未找到", service)
-		failResponse(res, "err service not found")
-		return
-	}
-	remoteAddr := strings.Split(req.RemoteAddr, ":")
-
-	//请求认证服务地址
-	authaddr := etcd.GetServiceAddr(config.Etcd, "auth_api")
-	if authaddr == "" {
-
-		failResponse(res, "err auth not found")
-		return
-
-	}
-	//获取请求地址
-
-	authUrl := fmt.Sprintf("http://%s/api/auth/authentication", authaddr)
-	ok := auth(authUrl, res, req)
-	if !ok {
-		return
-	}
-
-	//认证到此结束
-	proxyUrl := fmt.Sprintf("http://%s%s", addr, req.URL.String())
-
-	logx.Infof("请求地址为%s 代理地址为%s", remoteAddr[0], proxyUrl)
-
-	remote, _ := url.Parse(fmt.Sprintf("http://%s", addr))
-	reverseProxy := httputil.NewSingleHostReverseProxy(remote)
-	reverseProxy.ServeHTTP(res, req)
-}
 
 type Response struct {
 	Code int    `json:"code"`
@@ -82,12 +37,6 @@ func auth(authUrl string, w http.ResponseWriter, r *http.Request) (ok bool) {
 	}
 
 	authReq.Header = r.Header
-	fmt.Println(r.URL.Query().Get("token"))
-	token := r.URL.Query().Get("token")
-	if token != "" {
-		authReq.Header.Set("Token", token)
-	}
-
 	authReq.Header.Set("ValidPath", r.URL.Path)
 
 	authRes, err := http.DefaultClient.Do(authReq)
@@ -135,6 +84,73 @@ func auth(authUrl string, w http.ResponseWriter, r *http.Request) (ok bool) {
 	return true
 
 }
+func proxy(proxyaddr string, w http.ResponseWriter, r *http.Request) {
+
+	byteDate, _ := io.ReadAll(r.Body)
+
+	proxyReq, err := http.NewRequest(r.Method, proxyaddr, bytes.NewBuffer(byteDate))
+
+	proxyReq.Header = r.Header
+	proxyReq.Header.Del("ValidPath")
+	if err != nil {
+		fmt.Println(err)
+		failResponse(w, "服务异常")
+		return
+
+	}
+
+	remoteAddr := strings.Split(r.RemoteAddr, ":")
+	proxyReq.Header.Set("X-Forwarded-For", remoteAddr[0])
+	response, err := http.DefaultClient.Do(proxyReq)
+	if err != nil {
+		fmt.Println(err)
+		failResponse(w, "服务异常")
+		return
+
+	}
+	io.Copy(w, response.Body)
+
+}
+func gateway(w http.ResponseWriter, r *http.Request) {
+	//匹配请求前缀
+	regex, _ := regexp.Compile(`/api/(.*?)/`)
+	addrList := regex.FindStringSubmatch(r.URL.Path)
+
+	if len(addrList) != 2 {
+		failResponse(w, "err path not found")
+		return
+	}
+	service := addrList[1]
+	addr := etcd.GetServiceAddr(config.Etcd, service+"_api")
+	if addr == "" {
+		fmt.Println("服务未找到", service)
+		failResponse(w, "err service not found")
+		return
+	}
+	remoteAddr := strings.Split(r.RemoteAddr, ":")
+
+	//请求认证服务地址
+	authaddr := etcd.GetServiceAddr(config.Etcd, "auth_api")
+	if authaddr == "" {
+
+		failResponse(w, "err auth not found")
+		return
+
+	}
+	//获取请求地址
+
+	authUrl := fmt.Sprintf("http://%s/api/auth/authentication", authaddr)
+	ok := auth(authUrl, w, r)
+	if !ok {
+		return
+	}
+
+	//认证到此结束
+	url := fmt.Sprintf("http://%s%s", addr, r.URL.String())
+	proxy(url, w, r)
+	logx.Infof("请求地址为%s 代理地址为%s", remoteAddr[0], url)
+
+}
 
 var configFile = flag.String("f", "settings.yaml", "the config file")
 
@@ -150,9 +166,7 @@ func main() {
 	flag.Parse()
 	logx.SetUp(config.Log)
 	conf.MustLoad(*configFile, &config)
-
+	http.HandleFunc("/", gateway)
 	fmt.Println("gateway server start at ", config.Addr)
-
-	proxy := Proxy{}
-	http.ListenAndServe(config.Addr, proxy)
+	http.ListenAndServe(config.Addr, nil)
 }
