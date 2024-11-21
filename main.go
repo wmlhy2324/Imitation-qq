@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"lhyim_server/core"
 	"lhyim_server/lhyim_chat/chat_models"
+	"lhyim_server/lhyim_file/file_model"
 	"lhyim_server/lhyim_group/group_models"
 	"lhyim_server/lhyim_user/user_models"
 )
@@ -30,6 +31,7 @@ func main() {
 			&group_models.GroupMsgModel{},
 			&chat_models.TopUserModel{},
 			&chat_models.UserChatDeleteModel{}, //置顶用户表
+			&file_model.FileModel{},
 		)
 		if err != nil {
 			fmt.Println("表结构创建失败", err)

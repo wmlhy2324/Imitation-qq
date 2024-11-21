@@ -1,7 +1,7 @@
 package svc
 
 import (
-	"github.com/redis/go-redis/v9"
+	"github.com/go-redis/redis"
 	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/gorm"
 	"lhyim_server/core"
@@ -22,10 +22,12 @@ type ServiceContext struct {
 
 func NewServiceContext(c config.Config) *ServiceContext {
 	MysqlDB := core.InitGorm(c.Mysql.DataSource)
+	client := core.InitRedis(c.Redis.Addr, c.Redis.Password, c.Redis.DB)
 	return &ServiceContext{
 		Config:  c,
 		UserRpc: users.NewUsers(zrpc.MustNewClient(c.UserRpc)),
 		DB:      MysqlDB,
 		ChatRpc: chat.NewChat(zrpc.MustNewClient(c.ChatRpc)),
+		Redis:   client,
 	}
 }

@@ -25,6 +25,7 @@ type FriendInfoResponse struct {
 	Avatar   string `gorm:"size:256" json:"avatar"`
 	Abstract string `gorm:"size:128" json:"abstract"`
 	Notice   string `json:"notice"`
+	IsOnline bool   `json:"isOnline"` //是否在线
 }
 
 type FriendListRequest struct {

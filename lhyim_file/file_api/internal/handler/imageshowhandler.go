@@ -1,14 +1,14 @@
 package handler
 
 import (
+	"errors"
+	"github.com/zeromicro/go-zero/rest/httpx"
 	"lhyim_server/common/response"
 	"lhyim_server/lhyim_file/file_api/internal/svc"
 	"lhyim_server/lhyim_file/file_api/internal/types"
+	"lhyim_server/lhyim_file/file_model"
 	"net/http"
 	"os"
-	"path"
-
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func ImageShowHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -18,8 +18,14 @@ func ImageShowHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			response.Response(r, w, nil, err)
 			return
 		}
-		filePath := path.Join("uploads", req.ImageType, req.ImageName)
-		byteDate, err := os.ReadFile(filePath)
+		var fileModel file_model.FileModel
+		err := svcCtx.DB.Take(&fileModel, "uid = ?", req.ImageName).Error
+		if err != nil {
+			response.Response(r, w, nil, errors.New("文件不存在"))
+			return
+		}
+
+		byteDate, err := os.ReadFile(fileModel.Path)
 		if err != nil {
 			response.Response(r, w, nil, err)
 			return

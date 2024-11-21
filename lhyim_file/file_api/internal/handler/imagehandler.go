@@ -3,13 +3,15 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/zeromicro/go-zero/core/logx"
 	"io"
 	"lhyim_server/common/response"
 	"lhyim_server/lhyim_file/file_api/internal/logic"
 	"lhyim_server/lhyim_file/file_api/internal/svc"
 	"lhyim_server/lhyim_file/file_api/internal/types"
+	"lhyim_server/lhyim_file/file_model"
 	"lhyim_server/utils"
-	"lhyim_server/utils/random"
 	"net/http"
 	"os"
 	"path"
@@ -47,54 +49,68 @@ func ImageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			response.Response(r, w, nil, errors.New("图片超过限制大小,最大为200kb"))
 			return
 		}
+		//文件上传用黑名单
 		//文件后缀白名单
+
 		nameList := strings.Split(fileHead.Filename, ".")
 		var suffix string //后缀
 		if len(nameList) > 1 {
 			suffix = nameList[len(nameList)-1]
 		}
-		if !utils.List(svcCtx.Config.WhiteList, suffix) {
-			response.Response(r, w, nil, errors.New("文件非法,请上传图片"))
+		if utils.List(svcCtx.Config.BlackList, suffix) {
+			response.Response(r, w, nil, errors.New("文件非法,请上传正确文件格式"))
 			return
 		}
-		//文件重名
+		//先去算hash
+		l := logic.NewImageLogic(r.Context(), svcCtx)
+		resp, err := l.Image(&req)
+
+		imageDate, _ := io.ReadAll(file)
+		imageHash := utils.MD5(imageDate)
+		var fileModel file_model.FileModel
+		err = svcCtx.DB.Take(&fileModel, "hash = ?", imageHash).Error
+		if err == nil {
+			logx.Infof("重复文件")
+			resp.Url = fileModel.WebPath()
+			response.Response(r, w, resp, err)
+			return
+		}
+		//拼接路径
+
 		dirPath := path.Join(svcCtx.Config.UploadDir, imageType)
 
-		dir, err := os.ReadDir(dirPath)
+		_, err = os.ReadDir(dirPath)
 		if err != nil {
 			os.MkdirAll(dirPath, 0666)
 		}
 
-		filePath := path.Join(svcCtx.Config.UploadDir, imageType, fileHead.Filename)
-		imageData, _ := io.ReadAll(file)
-		//filename := fileHead.Filename
-		l := logic.NewImageLogic(r.Context(), svcCtx)
-		resp, err := l.Image(&req)
-		resp.Url = "/" + filePath
-		if InDir(dir, fileHead.Filename) {
-			byteDate, _ := os.ReadFile(filePath)
-			oldfilehash := utils.MD5(byteDate)
-			newfilehash := utils.MD5(imageData)
-			if oldfilehash == newfilehash {
-				fmt.Println("两个文件一样")
-				response.Response(r, w, resp, nil)
-				return
-			}
-			//两个文件不一样
-			//改名操作
-			var prefix = utils.GetFilePrefix(fileHead.Filename)
-			newPath := fmt.Sprintf("%s_%s.%s", prefix, random.RandStr(4), suffix)
-			filePath = path.Join(svcCtx.Config.UploadDir, imageType, newPath)
-			//如果改了名字还是重名就需要递归
+		NewfileModel := file_model.FileModel{
+			UserID:   req.UserID,
+			FileName: fileHead.Filename,
+			Size:     fileHead.Size,
+			Hash:     utils.MD5(imageDate),
+			Uid:      uuid.New(),
 		}
+		NewfileModel.Path = path.Join(dirPath, fmt.Sprintf("%s.%s", NewfileModel.Uid, suffix))
 
-		err = os.WriteFile(filePath, imageData, 0666)
+		//filename := fileHead.Filename
+
+		err = os.WriteFile(NewfileModel.Path, imageDate, 0666)
 		if err != nil {
 			response.Response(r, w, nil, err)
 			return
 
 		}
-		resp.Url = "/" + filePath
+		//文件信息入库
+
+		err = svcCtx.DB.Create(&NewfileModel).Error
+		if err != nil {
+			logx.Error(err)
+			response.Response(r, w, nil, err)
+			return
+		}
+		resp.Url = NewfileModel.WebPath()
+
 		response.Response(r, w, resp, err)
 
 	}

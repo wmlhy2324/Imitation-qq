@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 	"lhyim_server/core"
 	"lhyim_server/lhyim_auth/auth_api/internal/config"
+
 	"lhyim_server/lhyim_user/user_rpc/types/user_rpc"
 	"lhyim_server/lhyim_user/user_rpc/users"
 )

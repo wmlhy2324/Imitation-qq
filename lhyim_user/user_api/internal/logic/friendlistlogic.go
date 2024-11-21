@@ -2,10 +2,10 @@ package logic
 
 import (
 	"context"
-	"fmt"
 	"lhyim_server/common/list_query"
 	"lhyim_server/common/models"
 	"lhyim_server/lhyim_user/user_models"
+	"strconv"
 
 	"lhyim_server/lhyim_user/user_api/internal/svc"
 	"lhyim_server/lhyim_user/user_api/internal/types"
@@ -50,8 +50,18 @@ func (l *FriendListLogic) FriendList(req *types.FriendListRequest) (resp *types.
 		},
 		Preload: []string{"SendUserModel", "RecvUserModel"},
 	})
-	fmt.Println(friends)
 
+	//查询哪些用户在线
+	onlineMap := l.svcCtx.Redis.HGetAll("online").Val()
+	var onlineUserMap = map[uint]bool{}
+	for key, _ := range onlineMap {
+		val, err1 := strconv.Atoi(key)
+		if err1 != nil {
+			logx.Error(err1)
+			continue
+		}
+		onlineUserMap[uint(val)] = true
+	}
 	for _, friend := range friends {
 		info := types.FriendInfoResponse{}
 		if friend.SendUserID == req.UserID {
@@ -62,6 +72,7 @@ func (l *FriendListLogic) FriendList(req *types.FriendListRequest) (resp *types.
 				Avatar:   friend.RecvUserModel.Avatar,
 				Abstract: friend.RecvUserModel.Abstract,
 				Notice:   friend.SendUserNotice,
+				IsOnline: onlineUserMap[friend.RecvUserID],
 			}
 		}
 		if friend.RecvUserID == req.UserID {
@@ -73,6 +84,7 @@ func (l *FriendListLogic) FriendList(req *types.FriendListRequest) (resp *types.
 				Avatar:   friend.SendUserModel.Avatar,
 				Abstract: friend.SendUserModel.Abstract,
 				Notice:   friend.RecvUserNotice,
+				IsOnline: onlineUserMap[friend.SendUserID],
 			}
 		}
 		list = append(list, info)

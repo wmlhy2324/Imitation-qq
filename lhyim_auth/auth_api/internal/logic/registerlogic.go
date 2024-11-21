@@ -34,7 +34,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.Regist
 		Password:       pwd,
 		Role:           1,
 		Avatar:         "",
-		OpenId:         "001",
+		OpenId:         "009",
 		RegisterSource: "本地注册",
 	})
 	if err != nil {

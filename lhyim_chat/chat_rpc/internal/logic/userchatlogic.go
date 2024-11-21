@@ -43,7 +43,7 @@ func (l *UserChatLogic) UserChat(in *chat_rpc.UserChatRequest) (*chat_rpc.UserCh
 			return nil, err
 		}
 	}
-	fmt.Println("msg = ", msg)
+
 	chat := chat_models.ChatModel{
 		SendUserID: uint(in.SendUserId),
 		RecvUserID: uint(in.RecvUserId),

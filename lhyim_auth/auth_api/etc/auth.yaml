@@ -35,5 +35,5 @@ WriteList:
   - /api/auth/open_login_info
   - /api/auth/logout
   - /api/auth/register
-  - /api/file/uploads/.*?/.*?
+  - /api/file/.{8}-.{4}-.{4}-.{12}
   - /api/settings/open_login
