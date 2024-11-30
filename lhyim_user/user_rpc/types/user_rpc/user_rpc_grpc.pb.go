@@ -24,6 +24,7 @@ const (
 	Users_UserListInfo_FullMethodName = "/user_rpc.Users/UserListInfo"
 	Users_IsFriend_FullMethodName     = "/user_rpc.Users/IsFriend"
 	Users_FriendList_FullMethodName   = "/user_rpc.Users/FriendList"
+	Users_UserBaseInfo_FullMethodName = "/user_rpc.Users/UserBaseInfo"
 )
 
 // UsersClient is the client API for Users service.
@@ -35,6 +36,7 @@ type UsersClient interface {
 	UserListInfo(ctx context.Context, in *UserListInfoRequest, opts ...grpc.CallOption) (*UserListInfoResponse, error)
 	IsFriend(ctx context.Context, in *IsFriendRequest, opts ...grpc.CallOption) (*IsFriendResponse, error)
 	FriendList(ctx context.Context, in *FriendListRequest, opts ...grpc.CallOption) (*FriendListResponse, error)
+	UserBaseInfo(ctx context.Context, in *UserBaseInfoRequest, opts ...grpc.CallOption) (*UserBaseInfoResponse, error)
 }
 
 type usersClient struct {
@@ -90,6 +92,15 @@ func (c *usersClient) FriendList(ctx context.Context, in *FriendListRequest, opt
 	return out, nil
 }
 
+func (c *usersClient) UserBaseInfo(ctx context.Context, in *UserBaseInfoRequest, opts ...grpc.CallOption) (*UserBaseInfoResponse, error) {
+	out := new(UserBaseInfoResponse)
+	err := c.cc.Invoke(ctx, Users_UserBaseInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UsersServer is the server API for Users service.
 // All implementations must embed UnimplementedUsersServer
 // for forward compatibility
@@ -99,6 +110,7 @@ type UsersServer interface {
 	UserListInfo(context.Context, *UserListInfoRequest) (*UserListInfoResponse, error)
 	IsFriend(context.Context, *IsFriendRequest) (*IsFriendResponse, error)
 	FriendList(context.Context, *FriendListRequest) (*FriendListResponse, error)
+	UserBaseInfo(context.Context, *UserBaseInfoRequest) (*UserBaseInfoResponse, error)
 	mustEmbedUnimplementedUsersServer()
 }
 
@@ -120,6 +132,9 @@ func (UnimplementedUsersServer) IsFriend(context.Context, *IsFriendRequest) (*Is
 }
 func (UnimplementedUsersServer) FriendList(context.Context, *FriendListRequest) (*FriendListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FriendList not implemented")
+}
+func (UnimplementedUsersServer) UserBaseInfo(context.Context, *UserBaseInfoRequest) (*UserBaseInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserBaseInfo not implemented")
 }
 func (UnimplementedUsersServer) mustEmbedUnimplementedUsersServer() {}
 
@@ -224,6 +239,24 @@ func _Users_FriendList_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Users_UserBaseInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserBaseInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServer).UserBaseInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Users_UserBaseInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServer).UserBaseInfo(ctx, req.(*UserBaseInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Users_ServiceDesc is the grpc.ServiceDesc for Users service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -250,6 +283,10 @@ var Users_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FriendList",
 			Handler:    _Users_FriendList_Handler,
+		},
+		{
+			MethodName: "UserBaseInfo",
+			Handler:    _Users_UserBaseInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

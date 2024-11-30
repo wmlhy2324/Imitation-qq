@@ -55,19 +55,26 @@ type VideoCallMsg struct {
 	EndReason int8      `json:"endReason"` //结束原因 0发起方挂断 1接收方挂断 2网络原因 3未打通
 }
 type WithdrawMsg struct {
-	Content   string `json:"content"` //撤回消息
-	OriginMsg *Msg   `json:"-"`       //原消息
+	Content   string `json:"content"`             //撤回消息
+	MsgID     uint   `json:"msgID"`               //撤回消息id
+	OriginMsg *Msg   `json:"originMsg,omitempty"` //原消息
 
 }
 type ReplyMsg struct {
-	MsgID   uint   `json:"msgID"`   //回复消息ID
-	Content string `json:"content"` //回复消息
-	Msg     *Msg   `json:"msg"`     //原消息
+	MsgID         uint      `json:"msgID"`         //回复消息ID
+	Content       string    `json:"content"`       //回复消息
+	Msg           *Msg      `json:"msg,omitempty"` //原消息
+	UserID        uint      `json:"userID"`        //被回复人id
+	UserNickName  string    `json:"userNickName"`  //被回复人的昵称
+	OriginMsgDate time.Time `json:"originMsgDate"`
 }
 type QuoteMsg struct {
-	MsgID   uint   `json:"msgID"`   //回复消息ID
-	Content string `json:"content"` //回复消息
-	Msg     *Msg   `json:"msg"`     //原消息
+	MsgID         uint      `json:"msgID"`        //回复消息ID
+	Content       string    `json:"content"`      //回复消息
+	Msg           *Msg      `json:"msg"`          //原消息
+	UserID        uint      `json:"userID"`       //被回复人id
+	UserNickName  string    `json:"userNickName"` //被回复人的昵称
+	OriginMsgDate time.Time `json:"originMsgDate"`
 }
 type AtMsg struct {
 	UserID  uint   `json:"userID"`  //用户ID
@@ -83,23 +90,32 @@ type TipMsg struct {
 	Status  string `json:"status"` //error success info
 }
 type Msg struct {
-	Type         MsgType       `json:"type"`         //消息类型 1文字消息 2图片消息 3视频消息 4文件消息 5语音消息 6语言通话 7视频童话 8撤回消息 9回复消息 10引用消息
-	TextMsg      *TextMsg      `json:"textMsg"`      //文字消息
-	ImageMsg     *ImageMsg     `json:"imageMsg"`     //图片消息
-	VideoMsg     *VideoMsg     `json:"videoMsg"`     //视频消息
-	FileMsg      *FileMsg      `json:"fileMsg"`      //文件消息
-	VoiceMsg     *VoiceMsg     `json:"voiceMsg"`     //语音消息
-	VoiceCallMsg *VoiceCallMsg `json:"voiceCallMsg"` //语音通话
-	VideoCallMsg *VideoCallMsg `json:"videoCallMsg"` //视频通话
-	WithdrawMsg  *WithdrawMsg  `json:"withdrawMsg"`  //撤回消息
-	ReplyMsg     *ReplyMsg     `json:"replyMsg"`     //回复消息
-	QuoteMsg     *QuoteMsg     `json:"quoteMsg"`     //引用消息
-	AtMsg        *AtMsg        `json:"atMsg"`        //at消息
-	TipMsg       *TipMsg       `json:"tipMsg"`       //提示消息，一般不入库
+	Type         MsgType       `json:"type"`                   //消息类型 1文字消息 2图片消息 3视频消息 4文件消息 5语音消息 6语言通话 7视频童话 8撤回消息 9回复消息 10引用消息
+	TextMsg      *TextMsg      `json:"textMsg,omitempty"`      //文字消息
+	ImageMsg     *ImageMsg     `json:"imageMsg,omitempty"`     //图片消息
+	VideoMsg     *VideoMsg     `json:"videoMsg,omitempty"`     //视频消息
+	FileMsg      *FileMsg      `json:"fileMsg,omitempty"`      //文件消息
+	VoiceMsg     *VoiceMsg     `json:"voiceMsg,omitempty"`     //语音消息
+	VoiceCallMsg *VoiceCallMsg `json:"voiceCallMsg,omitempty"` //语音通话
+	VideoCallMsg *VideoCallMsg `json:"videoCallMsg,omitempty"` //视频通话
+	WithdrawMsg  *WithdrawMsg  `json:"withdrawMsg,omitempty"`  //撤回消息
+	ReplyMsg     *ReplyMsg     `json:"replyMsg,omitempty"`     //回复消息
+	QuoteMsg     *QuoteMsg     `json:"quoteMsg,omitempty"`     //引用消息
+	AtMsg        *AtMsg        `json:"atMsg,omitempty"`        //at消息
+	TipMsg       *TipMsg       `json:"tipMsg,omitempty"`       //提示消息，一般不入库
 }
 
 func (c *Msg) Scan(val interface{}) error {
-	return json.Unmarshal(val.([]byte), c)
+	err := json.Unmarshal(val.([]byte), c)
+	if err != nil {
+		return err
+	}
+	if c.Type == WithdrawMsgType {
+		if c.WithdrawMsg != nil {
+			c.WithdrawMsg.OriginMsg = nil
+		}
+	}
+	return nil
 }
 func (c Msg) Value() (driver.Value, error) {
 	b, err := json.Marshal(c)

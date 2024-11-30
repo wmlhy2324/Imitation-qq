@@ -47,9 +47,9 @@ func (chat ChatModel) MsgPreviewMethod() string {
 	case ctype.WithdrawMsgType:
 		return "[回复消息]"
 	case ctype.ReplyMsgType:
-		return "[引用消息]"
+		return "[回复消息]"
 	case ctype.QuoteMsgType:
-		return "[@消息]"
+		return "[引用消息]"
 	default:
 		panic("unhandled default case")
 

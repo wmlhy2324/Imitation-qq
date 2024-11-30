@@ -18,6 +18,8 @@ type (
 	FriendListResponse   = user_rpc.FriendListResponse
 	IsFriendRequest      = user_rpc.IsFriendRequest
 	IsFriendResponse     = user_rpc.IsFriendResponse
+	UserBaseInfoRequest  = user_rpc.UserBaseInfoRequest
+	UserBaseInfoResponse = user_rpc.UserBaseInfoResponse
 	UserCreateRequest    = user_rpc.UserCreateRequest
 	UserCreateResponse   = user_rpc.UserCreateResponse
 	UserInfo             = user_rpc.UserInfo
@@ -32,6 +34,7 @@ type (
 		UserListInfo(ctx context.Context, in *UserListInfoRequest, opts ...grpc.CallOption) (*UserListInfoResponse, error)
 		IsFriend(ctx context.Context, in *IsFriendRequest, opts ...grpc.CallOption) (*IsFriendResponse, error)
 		FriendList(ctx context.Context, in *FriendListRequest, opts ...grpc.CallOption) (*FriendListResponse, error)
+		UserBaseInfo(ctx context.Context, in *UserBaseInfoRequest, opts ...grpc.CallOption) (*UserBaseInfoResponse, error)
 	}
 
 	defaultUsers struct {
@@ -68,4 +71,9 @@ func (m *defaultUsers) IsFriend(ctx context.Context, in *IsFriendRequest, opts .
 func (m *defaultUsers) FriendList(ctx context.Context, in *FriendListRequest, opts ...grpc.CallOption) (*FriendListResponse, error) {
 	client := user_rpc.NewUsersClient(m.cli.Conn())
 	return client.FriendList(ctx, in, opts...)
+}
+
+func (m *defaultUsers) UserBaseInfo(ctx context.Context, in *UserBaseInfoRequest, opts ...grpc.CallOption) (*UserBaseInfoResponse, error) {
+	client := user_rpc.NewUsersClient(m.cli.Conn())
+	return client.UserBaseInfo(ctx, in, opts...)
 }

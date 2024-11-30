@@ -46,3 +46,8 @@ func (s *UsersServer) FriendList(ctx context.Context, in *user_rpc.FriendListReq
 	l := logic.NewFriendListLogic(ctx, s.svcCtx)
 	return l.FriendList(in)
 }
+
+func (s *UsersServer) UserBaseInfo(ctx context.Context, in *user_rpc.UserBaseInfoRequest) (*user_rpc.UserBaseInfoResponse, error) {
+	l := logic.NewUserBaseInfoLogic(ctx, s.svcCtx)
+	return l.UserBaseInfo(in)
+}
