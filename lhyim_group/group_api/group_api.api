@@ -1,0 +1,51 @@
+syntax = "v1"
+
+info (
+	title:   "type title here"
+	desc:    "type desc here"
+	author:  "type author here"
+	email:   "type email here"
+	version: "type version here"
+)
+
+type groupCreateRequest {
+	UserID     uint   `header:"User-ID"`
+	Mode       int8   `json:"mode,optional"` //1直接创建 2选人创建
+	Name       string `json:"name,optional"`
+	IsSearch   bool   `json:"isSearch,optional"` //是否可以搜到
+	Size       int    `json:"size,optional"` //群规模
+	UserIDList []uint `json:"userIdList,optional"` //用户id列表
+}
+
+type groupCreateResponse {}
+
+type groupInfoRequest {
+	UserID uint `header:"User-ID"`
+	ID     uint `path:"id"`
+}
+
+type UserInfo {
+	UserID   uint   `header:"User-ID"`
+	Avatar   string `json:"avatar"`
+	Nickname string `json:"nickname"`
+}
+
+type groupInfoResponse {
+	GroupID           uint       `json:"groupId"`
+	Title             string     `json:"title"`
+	Abstract          string     `json:"abstract"`
+	MemberCount       int        `json:"memberCount"`
+	MemberOnlineCount int        `json:"memberOnlineCount"`
+	Avatar            string     `json:"avatar"`
+	Creator           UserInfo   `json:"creator"` //群主
+	AdminList         []UserInfo `json:"adminList"` //管理员列表
+}
+
+service group {
+	@handler groupCreate
+	post /api/group/group (groupCreateRequest) returns (groupCreateResponse)
+
+	@handler groupInfo
+	get /api/group/group/:id (groupInfoRequest) returns (groupInfoResponse)
+} //goctl api go -api group_api.api -dir . --home ../../template
+

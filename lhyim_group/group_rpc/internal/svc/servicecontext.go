@@ -4,7 +4,7 @@ import (
 	"github.com/go-redis/redis"
 	"gorm.io/gorm"
 	"lhyim_server/core"
-	"lhyim_server/lhyim_user/user_rpc/internal/config"
+	"lhyim_server/lhyim_group/group_rpc/internal/config"
 )
 
 type ServiceContext struct {

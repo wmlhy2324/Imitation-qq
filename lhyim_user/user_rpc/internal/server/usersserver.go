@@ -51,3 +51,8 @@ func (s *UsersServer) UserBaseInfo(ctx context.Context, in *user_rpc.UserBaseInf
 	l := logic.NewUserBaseInfoLogic(ctx, s.svcCtx)
 	return l.UserBaseInfo(in)
 }
+
+func (s *UsersServer) UserOnlineList(ctx context.Context, in *user_rpc.UserOnlineRequest) (*user_rpc.UserOnlineResponse, error) {
+	l := logic.NewUserOnlineListLogic(ctx, s.svcCtx)
+	return l.UserOnlineList(in)
+}

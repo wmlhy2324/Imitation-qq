@@ -18,4 +18,5 @@ type GroupModel struct {
 	IsTemporarySession   bool                       `json:"isTemporarySession"`       //是否是临时会话
 	IsProhibition        bool                       `json:"isProhibition"`            //是否禁言
 	Size                 int                        `json:"size"`                     //群成员数量
+	MemberList           []GroupMemberModel         `gorm:"ForeignKey:GroupID" json:"memberList"`
 }

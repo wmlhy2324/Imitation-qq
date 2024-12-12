@@ -1,9 +1,9 @@
-Name: userrpc.rpc
-ListenOn: 0.0.0.0:30021
+Name: grouprpc.rpc
+ListenOn: 0.0.0.0:30024
 Etcd:
   Hosts:
   - 127.0.0.1:2379
-  Key: userrpc.rpc
+  Key: grouprpc.rpc
 #跟在api中一样引入mysql#
 Mysql:
   DataSource: root:112304@tcp(127.0.0.1:3306)/lhyim_server_db?charset=utf8mb4&parseTime=True&loc=Local

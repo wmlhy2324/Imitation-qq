@@ -1,18 +1,24 @@
-Name: userrpc.rpc
-ListenOn: 0.0.0.0:30021
-Etcd:
-  Hosts:
-  - 127.0.0.1:2379
-  Key: userrpc.rpc
-#跟在api中一样引入mysql#
+Name: group
+Host: 0.0.0.0
+Port: 20024
 Mysql:
   DataSource: root:112304@tcp(127.0.0.1:3306)/lhyim_server_db?charset=utf8mb4&parseTime=True&loc=Local
-  #跟api一样导入日志#
 Log:
   Stat: false
   Encoding: plain
   TimeFormat:  "2006-01-02 15:04:05"
-RedisConf:
+Redis:
   Addr: 127.0.0.1:6379
   Password:
   DB: 0
+Etcd: 127.0.0.1:2379
+UserRpc:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: userrpc.rpc
+GroupRpc:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: grouprpc.rpc
