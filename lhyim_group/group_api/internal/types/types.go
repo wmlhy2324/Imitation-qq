@@ -7,6 +7,15 @@ type UserInfo struct {
 	Nickname string `json:"nickname"`
 }
 
+type VerificationQuestion struct {
+	Problem1 *string `json:"problem1,optional" conf:"problem1"`
+	Problem2 *string `json:"problem2,optional" conf:"problem2"`
+	Problem3 *string `json:"problem3,optional" conf:"problem3"`
+	Answer1  *string `json:"answer1,optional" conf:"answer1"`
+	Answer2  *string `json:"answer2,optional" conf:"answer2"`
+	Answer3  *string `json:"answer3,optional" conf:"answer3"`
+}
+
 type GroupCreateRequest struct {
 	UserID     uint   `header:"User-ID"`
 	Mode       int8   `json:"mode,optional"` //1直接创建 2选人创建
@@ -33,4 +42,30 @@ type GroupInfoResponse struct {
 	Avatar            string     `json:"avatar"`
 	Creator           UserInfo   `json:"creator"`   //群主
 	AdminList         []UserInfo `json:"adminList"` //管理员列表
+	Role              int8       `json:"role"`      //1群主，2群管理员，3群成员
+}
+
+type GroupRemoveRequest struct {
+	UserID uint `header:"User-ID"`
+	ID     uint `path:"id"`
+}
+
+type GroupRemoveResponse struct {
+}
+
+type GroupUpdataRequest struct {
+	UserID               uint                  `header:"User-ID"`
+	ID                   uint                  `json:"id"`
+	IsSearch             *bool                 `json:"isSearch,optional" conf:"is_search"`
+	Verification         *int8                 `json:"verification,optional" conf:"verification"`
+	IsInvite             *bool                 `json:"isInvite,optional" conf:"is_invite"`
+	IsTemporarySession   *bool                 `json:"isTemporarySession,optional" conf:"is_temporary_session"` //是否开启临时会话
+	IsProhibition        *bool                 `json:"isProhibition,optional" conf:"is_prohibition"`
+	VerificationQuestion *VerificationQuestion `json:"verificationQuestion,optional" conf:"verification_question"`
+	Avatar               *string               `json:"avatar,optional" conf:"avatar"`
+	Abstract             *string               `json:"abstrat,optional" conf:"abstract"`
+	Title                *string               `json:"title,optional" conf:"title"`
+}
+
+type GroupUpdateResponse struct {
 }

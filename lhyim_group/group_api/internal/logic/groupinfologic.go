@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"lhyim_server/lhyim_group/group_models"
-	"lhyim_server/lhyim_group/group_rpc/types/group_rpc"
 	"lhyim_server/lhyim_user/user_rpc/types/user_rpc"
 	"lhyim_server/utils/set"
 
@@ -30,20 +29,14 @@ func NewGroupInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GroupIn
 }
 
 func (l *GroupInfoLogic) GroupInfo(req *types.GroupInfoRequest) (resp *types.GroupInfoResponse, err error) {
-	//谁能调这个接口 必须是这个群的成员
-	isInGroup, err := l.svcCtx.GroupRpc.IsInGroup(l.ctx, &group_rpc.IsInGroupRequest{
-		UserId:  uint32(req.UserID),
-		GroupId: uint32(req.ID),
-	})
-	fmt.Println(isInGroup.IsInGroup, err != nil)
+	var member group_models.GroupMemberModel
+	err = l.svcCtx.DB.Take(&member, "group_id = ? and user_id = ?", req.ID, req.UserID).Error
+
 	if err != nil {
 		logx.Error(err)
 		return nil, errors.New("该用户不是群成员")
 	}
 
-	if isInGroup.IsInGroup == false {
-		return nil, errors.New("该用户不是群成员")
-	}
 	var groupModel group_models.GroupModel
 	err = l.svcCtx.DB.Preload("MemberList").Take(&groupModel, req.ID).Error
 	if err != nil {
@@ -56,6 +49,7 @@ func (l *GroupInfoLogic) GroupInfo(req *types.GroupInfoRequest) (resp *types.Gro
 		MemberCount: len(groupModel.MemberList),
 		Avatar:      groupModel.Avatar,
 		Abstract:    groupModel.Abstract,
+		Role:        member.Role,
 	}
 	//用户信息列表
 	var userIDList []uint32
