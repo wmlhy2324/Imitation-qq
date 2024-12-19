@@ -32,7 +32,9 @@ func (l *FriendListLogic) FriendList(in *user_rpc.FriendListRequest) (*user_rpc.
 
 			Limit: -1,
 		},
+		Where:   l.svcCtx.DB.Where("send_user_id = ? or recv_user_id = ?", in.UserId, in.UserId),
 		Preload: []string{"SendUserModel", "RecvUserModel"},
+		Debug:   true,
 	})
 	var list []*user_rpc.FriendInfo
 	for _, friend := range friends {

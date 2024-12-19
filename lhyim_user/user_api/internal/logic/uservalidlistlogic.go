@@ -42,6 +42,7 @@ func (l *UserValidListLogic) UserValidList(req *types.FriendValidRequest) (resp 
 		info := types.FriendValidInfo{
 			AddtionalMessage: v.AdditionalMessage,
 			ID:               v.ID,
+			CreateAt:         v.CreatedAt.String(),
 		}
 		if v.SendUserID == req.UserID {
 			//我是发起方

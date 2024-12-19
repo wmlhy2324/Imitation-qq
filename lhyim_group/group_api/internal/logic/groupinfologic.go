@@ -3,7 +3,6 @@ package logic
 import (
 	"context"
 	"errors"
-	"fmt"
 	"lhyim_server/lhyim_group/group_models"
 	"lhyim_server/lhyim_user/user_rpc/types/user_rpc"
 	"lhyim_server/utils/set"
@@ -61,7 +60,7 @@ func (l *GroupInfoLogic) GroupInfo(req *types.GroupInfoRequest) (resp *types.Gro
 		userAllIDList = append(userIDList, uint32(member.UserID))
 	}
 	userListResponse, err := l.svcCtx.UserRpc.UserListInfo(l.ctx, &user_rpc.UserListInfoRequest{UserIdList: userIDList})
-	fmt.Println("id = ", userIDList)
+
 	if err != nil {
 		logx.Error(err)
 		return nil, errors.New("用户信息列表rpc错误")

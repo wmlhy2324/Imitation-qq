@@ -145,6 +145,7 @@ type FriendValidInfo {
 	Verification        int8                  `json:"verification"` //好友验证
 	ID                  uint                  `json:"id"` //验证记录的id
 	Flag                string                `json:"flag"` //send我是发起方 recv 我是接收方
+	CreateAt            string                `json:"createAt"`
 }
 
 type FriendValidResponse {
