@@ -45,6 +45,17 @@ type GroupInfoResponse struct {
 	Role              int8       `json:"role"`      //1群主，2群管理员，3群成员
 }
 
+type GroupMemberRequest struct {
+	UserID uint   `header:"User-ID"`
+	ID     uint   `form:"id"`
+	Page   int    `form:"page,optional"`
+	Limit  int    `form:"limit,optional"`
+	Sort   string `form:"sort,optional"`
+}
+
+type GroupMemberResponse struct {
+}
+
 type GroupRemoveRequest struct {
 	UserID uint `header:"User-ID"`
 	ID     uint `path:"id"`

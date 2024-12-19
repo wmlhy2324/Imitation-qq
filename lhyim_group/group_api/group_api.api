@@ -74,6 +74,16 @@ type groupRemoveRequest {
 
 type groupRemoveResponse {}
 
+type groupMemberRequest {
+	UserID uint   `header:"User-ID"`
+	ID     uint   `form:"id"`
+	Page   int    `form:"page,optional"`
+	Limit  int    `form:"limit,optional"`
+	Sort   string `form:"sort,optional"`
+}
+
+type groupMemberResponse {}
+
 service group {
 	@handler groupCreate
 	post /api/group/group (groupCreateRequest) returns (groupCreateResponse)
@@ -86,5 +96,8 @@ service group {
 
 	@handler groupRemove
 	delete /api/group/group/:id (groupRemoveRequest) returns (groupRemoveResponse) //群解散
+
+	@handler groupMember
+	get /api/group/member (groupMemberRequest) returns (groupMemberResponse)
 } //goctl api go -api group_api.api -dir . --home ../../template
 
