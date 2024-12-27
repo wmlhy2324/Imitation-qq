@@ -29,6 +29,7 @@ func main() {
 			&group_models.GroupMemberModel{},
 			&group_models.GroupVerifyModel{},
 			&group_models.GroupMsgModel{},
+			&group_models.GroupUserMsgDeleteModel{},
 			&chat_models.TopUserModel{},
 			&chat_models.UserChatDeleteModel{}, //置顶用户表
 			&file_model.FileModel{},

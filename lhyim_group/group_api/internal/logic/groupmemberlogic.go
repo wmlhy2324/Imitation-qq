@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"lhyim_server/common/list_query"
 	"lhyim_server/common/models"
+	"lhyim_server/common/models/ctype"
 	"lhyim_server/lhyim_group/group_models"
 	"lhyim_server/lhyim_user/user_rpc/types/user_rpc"
 
@@ -31,7 +32,7 @@ func NewGroupMemberLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Group
 type Data struct {
 	GroupID        uint   `gorm:"column:group_id"`
 	UserID         uint   `gorm:"column:user_id"`
-	Role           string `gorm:"column:role"`
+	Role           int8   `gorm:"column:role"`
 	CreatedAt      string `gorm:"column:created_at"`
 	MemberNickname string `gorm:"column:member_nickname"`
 	NewMsgDate     string `gorm:"column:new_msg_date"`
@@ -58,17 +59,25 @@ func (l *GroupMemberLogic) GroupMember(req *types.GroupMemberRequest) (resp *typ
 					column,
 				)
 		},
+		Where: l.svcCtx.DB.Where("group_id = ?", req.ID),
 	})
 	var userIDList []uint32
 	for _, data := range memberList {
 		userIDList = append(userIDList, uint32(data.UserID))
 	}
+	var userInfoMap = map[uint]ctype.UserInfo{}
 	userListResponse, err := l.svcCtx.UserRpc.UserListInfo(l.ctx, &user_rpc.UserListInfoRequest{UserIdList: userIDList})
 	//服务降级
-	if err != nil {
+	if err == nil {
+		for u, info := range userListResponse.UserInfo {
+			userInfoMap[uint(u)] = ctype.UserInfo{
+				ID:       uint(u),
+				Nickname: info.NickName,
+				Avatar:   info.Avatar,
+			}
+		}
+	} else {
 		logx.Error(err)
-		//如果这里不初始化的话，后面取值会报错空指针，导致整个服务挂掉
-		userListResponse.UserInfo = map[uint32]*user_rpc.UserInfo{}
 	}
 	var userOnlineMap = map[uint32]bool{}
 
@@ -77,6 +86,22 @@ func (l *GroupMemberLogic) GroupMember(req *types.GroupMemberRequest) (resp *typ
 		for _, v := range userOnlineResponse.UserIdList {
 			userOnlineMap[v] = true
 		}
+	} else {
+		logx.Error(err)
 	}
+	resp = new(types.GroupMemberResponse)
+	for _, date := range memberList {
+		resp.List = append(resp.List, types.GroupMemberInfo{
+			UserID:         date.UserID,
+			UserNickName:   userInfoMap[date.UserID].Nickname,
+			Avatar:         userInfoMap[date.UserID].Avatar,
+			IsOnline:       userOnlineMap[uint32(date.UserID)],
+			Role:           date.Role,
+			MemberNickname: date.MemberNickname,
+			CreateAt:       date.CreatedAt,
+			NewMsgDate:     date.NewMsgDate,
+		})
+	}
+	resp.Count = int(count)
 	return
 }

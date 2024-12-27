@@ -46,12 +46,19 @@ func (l *GroupValidStatusLogic) GroupValidStatus(req *types.GroupValidStatusRequ
 	}
 	switch req.Status {
 	case 0: //未操作
-		break
+		return
 	case 1: //1已同意
-	//把用户加群里
+		//把用户加群里
+		var member1 = group_models.GroupMemberModel{
+			GroupID: groupValidModel.GroupID,
+			UserID:  groupValidModel.UserID,
+			Role:    3,
+		}
+		l.svcCtx.DB.Create(&member1)
 	case 2: //2已拒绝
 	case 3: //3已忽略
 
 	}
+	l.svcCtx.DB.Model(&groupValidModel).UpdateColumn("status", req.Status)
 	return
 }

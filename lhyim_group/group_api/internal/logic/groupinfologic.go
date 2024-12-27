@@ -43,12 +43,14 @@ func (l *GroupInfoLogic) GroupInfo(req *types.GroupInfoRequest) (resp *types.Gro
 		return nil, errors.New("群不存在")
 	}
 	resp = &types.GroupInfoResponse{
-		GroupID:     groupModel.ID,
-		Title:       groupModel.Title,
-		MemberCount: len(groupModel.MemberList),
-		Avatar:      groupModel.Avatar,
-		Abstract:    groupModel.Abstract,
-		Role:        member.Role,
+		GroupID:         groupModel.ID,
+		Title:           groupModel.Title,
+		MemberCount:     len(groupModel.MemberList),
+		Avatar:          groupModel.Avatar,
+		Abstract:        groupModel.Abstract,
+		Role:            member.Role,
+		IsProhibition:   groupModel.IsProhibition,
+		ProhibitionTime: member.ProhibitionTime,
 	}
 	//用户信息列表
 	var userIDList []uint32

@@ -32,6 +32,14 @@ type GroupSearch struct {
 	UserOnlineCount int    `json:"userOnlineCount"`
 }
 
+type GroupSessionList struct {
+	GroupID       uint   `json:"groupId"`
+	Title         string `json:"title"`
+	Avatar        string `json:"avatar"`
+	NewMsgDate    string `json:"newMsgDate"`    //最新消息
+	NewMsgPreview string `json:"newMsgPreview"` //最新的消息内容
+}
+
 type GroupValidRequest struct {
 	UserID  uint `header:"User-ID"`
 	GroupID uint `path:"id"`
@@ -90,6 +98,16 @@ type GroupCreateRequest struct {
 type GroupCreateResponse struct {
 }
 
+type GroupHistoryRequest struct {
+	UserID uint `header:"User-ID"`
+	ID     uint `path:"id"`
+	Page   int  `form:"page,optional"`
+	Limit  int  `form:"limit,optional"`
+}
+
+type GroupHistoryResponse struct {
+}
+
 type GroupInfoRequest struct {
 	UserID uint `header:"User-ID"`
 	ID     uint `path:"id"`
@@ -102,9 +120,11 @@ type GroupInfoResponse struct {
 	MemberCount       int        `json:"memberCount"`
 	MemberOnlineCount int        `json:"memberOnlineCount"`
 	Avatar            string     `json:"avatar"`
-	Creator           UserInfo   `json:"creator"`   //群主
-	AdminList         []UserInfo `json:"adminList"` //管理员列表
-	Role              int8       `json:"role"`      //1群主，2群管理员，3群成员
+	Creator           UserInfo   `json:"creator"`         //群主
+	AdminList         []UserInfo `json:"adminList"`       //管理员列表
+	Role              int8       `json:"role"`            //1群主，2群管理员，3群成员
+	IsProhibition     bool       `json:"isProhibition"`   //群禁言
+	ProhibitionTime   *int       `json:"prohibitionTime"` //自己的禁言时间
 }
 
 type GroupMemberAddRequest struct {
@@ -158,6 +178,16 @@ type GroupMemberRoleUpdateRequest struct {
 type GroupMemberRoleUpdateResponse struct {
 }
 
+type GroupProhibitionRequest struct {
+	UserID          uint `header:"User-ID"`
+	MemberID        uint `json:"memberId"`
+	ProhibitionTime *int `json:"prohibitionTime,optional"` //分钟
+	GroupID         uint `json:"groupId"`
+}
+
+type GroupProhibitionResponse struct {
+}
+
 type GroupRemoveRequest struct {
 	UserID uint `header:"User-ID"`
 	ID     uint `path:"id"`
@@ -176,6 +206,17 @@ type GroupSearchRequest struct {
 	Key    string `form:"key"` //群id和昵称
 	Page   int    `form:"page,optional"`
 	Limit  int    `form:"limit,optional"`
+}
+
+type GroupSessionRequest struct {
+	UserID uint `header:"User-ID"`
+	Page   int  `form:"page,optional"`
+	Limit  int  `form:"limit,optional"`
+}
+
+type GroupSessionResponse struct {
+	List  []GroupSessionList `json:"list"`
+	Count int                `json:"count"`
 }
 
 type GroupUpdataRequest struct {

@@ -40,6 +40,8 @@ type groupInfoResponse {
 	Creator           UserInfo   `json:"creator"` //群主
 	AdminList         []UserInfo `json:"adminList"` //管理员列表
 	Role              int8       `json:"role"` //1群主，2群管理员，3群成员
+	IsProhibition     bool       `json:"isProhibition"` //群禁言
+	ProhibitionTime   *int       `json:"prohibitionTime"` //自己的禁言时间
 }
 
 type VerificationQuestion {
@@ -223,6 +225,43 @@ type groupValidStatusRequest {
 
 type groupValidStatusResponse {}
 
+type groupProhibitionRequest {
+	UserID          uint `header:"User-ID"`
+	MemberID        uint `json:"memberId"`
+	ProhibitionTime *int `json:"prohibitionTime,optional"` //分钟
+	GroupID         uint `json:"groupId"`
+}
+
+type groupProhibitionResponse {}
+
+type groupHistoryRequest {
+	UserID uint `header:"User-ID"`
+	ID     uint `path:"id"`
+	Page   int  `form:"page,optional"`
+	Limit  int  `form:"limit,optional"`
+}
+
+type groupHistoryResponse {}
+
+type groupSessionRequest {
+	UserID uint `header:"User-ID"`
+	Page   int  `form:"page,optional"`
+	Limit  int  `form:"limit,optional"`
+}
+
+type groupSessionResponse {
+	List  []GroupSessionList `json:"list"`
+	Count int                `json:"count"`
+}
+
+type GroupSessionList {
+	GroupID       uint   `json:"groupId"`
+	Title         string `json:"title"`
+	Avatar        string `json:"avatar"`
+	NewMsgDate    string `json:"newMsgDate"` //最新消息
+	NewMsgPreview string `json:"newMsgPreview"` //最新的消息内容
+}
+
 service group {
 	@handler groupCreate
 	post /api/group/group (groupCreateRequest) returns (groupCreateResponse)
@@ -268,6 +307,15 @@ service group {
 
 	@handler groupValidStatus
 	put /api/group/valid/status (groupValidStatusRequest) returns (groupValidStatusResponse)
+
+	@handler groupProhibition
+	put /api/group/member/prohibition (groupProhibitionRequest) returns (groupProhibitionResponse)
+
+	@handler groupHistory //聊天记录
+	get /api/group/history/:id (groupHistoryRequest) returns (groupHistoryResponse)
+
+	@handler groupSession
+	get /api/group/session (groupSessionRequest) returns (groupSessionResponse) //群会话列表
 //我的好友哪些在这个群里面
 } //goctl api go -api group_api.api -dir . --home ../../template
 
