@@ -43,6 +43,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: groupHistoryHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodDelete,
+				Path:    "/api/group/history/:id",
+				Handler: groupHistoryDeleteHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/api/group/member",
 				Handler: groupMemberHandler(serverCtx),
@@ -74,6 +79,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/group/my",
+				Handler: groupMyHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/group/search",
 				Handler: groupSearchHandler(serverCtx),
 			},
@@ -81,6 +91,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/group/session",
 				Handler: groupSessionHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPut,
+				Path:    "/api/group/top",
+				Handler: groupTopHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
@@ -101,6 +116,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPut,
 				Path:    "/api/group/valid/status",
 				Handler: groupValidStatusHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/group/ws/chat",
+				Handler: groupChatHandler(serverCtx),
 			},
 		},
 	)

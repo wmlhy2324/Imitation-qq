@@ -22,6 +22,20 @@ type GroupMemberInfo struct {
 	NewMsgDate     string `json:"newMsgDate"`
 }
 
+type GroupMyListResponse struct {
+	List  []GroupMyResponse `json:"list"`
+	Count int               `json:"count"`
+}
+
+type GroupMyResponse struct {
+	GroupID          uint   `json:"groupId"`
+	GroupAvatar      string `json:"groupAvatar"`
+	GroupTitle       string `json:"groupTitle"`
+	GroupMemberCount int    `json:"groupMemberCount"`
+	Role             int8   `json:"role"`
+	Mole             int8   `json:"mole"`
+}
+
 type GroupSearch struct {
 	GroupID         uint   `json:"groupId"`
 	Title           string `json:"title"`
@@ -38,6 +52,7 @@ type GroupSessionList struct {
 	Avatar        string `json:"avatar"`
 	NewMsgDate    string `json:"newMsgDate"`    //最新消息
 	NewMsgPreview string `json:"newMsgPreview"` //最新的消息内容
+	IsTop         bool   `json:"isTop"`         //是否置顶
 }
 
 type GroupValidRequest struct {
@@ -86,6 +101,13 @@ type VerificationQuestion struct {
 	Answer3  *string `json:"answer3,optional" conf:"answer3"`
 }
 
+type GroupChatRequest struct {
+	UserID uint `header:"User-ID"`
+}
+
+type GroupChatResponse struct {
+}
+
 type GroupCreateRequest struct {
 	UserID     uint   `header:"User-ID"`
 	Mode       int8   `json:"mode,optional"` //1直接创建 2选人创建
@@ -96,6 +118,17 @@ type GroupCreateRequest struct {
 }
 
 type GroupCreateResponse struct {
+}
+
+type GroupHistoryDeleteRequest struct {
+	UserID    uint   `header:"User-ID"`
+	GroupID   uint   `path:"id"`
+	Page      int    `form:"page,optional"`
+	Limit     int    `form:"limit,optional"`
+	MsgIDList []uint `json:"msgIdList"`
+}
+
+type GroupHistoryDeleteResponse struct {
 }
 
 type GroupHistoryRequest struct {
@@ -178,6 +211,13 @@ type GroupMemberRoleUpdateRequest struct {
 type GroupMemberRoleUpdateResponse struct {
 }
 
+type GroupMyRequest struct {
+	UserID uint `header:"User-ID"`
+	Mode   int8 `form:"mode"` //1我创建的群聊 2我加入的群聊
+	Page   int  `form:"page,optional"`
+	Limit  int  `form:"limit,optional"`
+}
+
 type GroupProhibitionRequest struct {
 	UserID          uint `header:"User-ID"`
 	MemberID        uint `json:"memberId"`
@@ -217,6 +257,15 @@ type GroupSessionRequest struct {
 type GroupSessionResponse struct {
 	List  []GroupSessionList `json:"list"`
 	Count int                `json:"count"`
+}
+
+type GroupTopRequest struct {
+	UserID  uint `header:"User-ID"`
+	GroupID uint `json:"groupId"` //需要置顶的群id
+	IsTop   bool `json:"isTop"`   //true置顶 false取消置顶
+}
+
+type GroupTopResponse struct {
 }
 
 type GroupUpdataRequest struct {

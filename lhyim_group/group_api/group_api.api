@@ -260,7 +260,53 @@ type GroupSessionList {
 	Avatar        string `json:"avatar"`
 	NewMsgDate    string `json:"newMsgDate"` //最新消息
 	NewMsgPreview string `json:"newMsgPreview"` //最新的消息内容
+	IsTop         bool   `json:"isTop"` //是否置顶
 }
+
+type groupHistoryDeleteRequest {
+	UserID    uint   `header:"User-ID"`
+	GroupID   uint   `path:"id"`
+	Page      int    `form:"page,optional"`
+	Limit     int    `form:"limit,optional"`
+	MsgIDList []uint `json:"msgIdList"`
+}
+
+type groupHistoryDeleteResponse {}
+
+type groupTopRequest {
+	UserID  uint `header:"User-ID"`
+	GroupID uint `json:"groupId"` //需要置顶的群id
+	IsTop   bool `json:"isTop"` //true置顶 false取消置顶
+}
+
+type groupTopResponse {}
+
+type groupMyRequest {
+	UserID uint `header:"User-ID"`
+	Mode   int8 `form:"mode"` //1我创建的群聊 2我加入的群聊
+	Page   int  `form:"page,optional"`
+	Limit  int  `form:"limit,optional"`
+}
+
+type GroupMyResponse {
+	GroupID          uint   `json:"groupId"`
+	GroupAvatar      string `json:"groupAvatar"`
+	GroupTitle       string `json:"groupTitle"`
+	GroupMemberCount int    `json:"groupMemberCount"`
+	Role             int8   `json:"role"`
+	Mole             int8   `json:"mole"`
+}
+
+type GroupMyListResponse {
+	List  []GroupMyResponse `json:"list"`
+	Count int               `json:"count"`
+}
+
+type groupChatRequest {
+	UserID uint `header:"User-ID"`
+}
+
+type groupChatResponse {}
 
 service group {
 	@handler groupCreate
@@ -316,6 +362,18 @@ service group {
 
 	@handler groupSession
 	get /api/group/session (groupSessionRequest) returns (groupSessionResponse) //群会话列表
+
+	@handler groupHistoryDelete
+	delete /api/group/history/:id (groupHistoryDeleteRequest) returns (groupHistoryDeleteResponse)
+
+	@handler groupTop
+	put /api/group/top (groupTopRequest) returns (groupTopResponse)
+
+	@handler groupMy
+	get /api/group/my (groupMyRequest) returns (GroupMyListResponse) //我创建的群聊和我加入的群聊
+
+	@handler groupChat
+	get /api/group/ws/chat (groupChatRequest) returns (groupChatResponse) //用户的对话服务
 //我的好友哪些在这个群里面
 } //goctl api go -api group_api.api -dir . --home ../../template
 

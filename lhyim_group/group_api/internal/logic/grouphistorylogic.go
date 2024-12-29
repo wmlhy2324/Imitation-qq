@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
 	"lhyim_server/common/list_query"
 	"lhyim_server/common/models"
 	"lhyim_server/common/models/ctype"
@@ -38,6 +39,7 @@ type HistoryResponse struct {
 	ID           uint      `json:"id"`
 	CreatedAt    time.Time `json:"createdAt"`
 	MsgType      int8      `json:"msgType"`
+	IsMe         bool      `json:"isMe"`
 }
 type HistoryListResponse struct {
 	List  []HistoryResponse `json:"list"`
@@ -50,15 +52,20 @@ func (l *GroupHistoryLogic) GroupHistory(req *types.GroupHistoryRequest) (resp *
 	if err != nil {
 		return nil, errors.New("该用户不是群成员")
 	}
-	var msgIDList []uint
-	l.svcCtx.DB.Model(&group_models.GroupUserMsgDeleteModel{}).Select("msg_id").Where("group_id = ? and user_id = ?", req.ID, req.UserID).Scan(&msgIDList)
+	var msgIDList = []uint{0}
+	l.svcCtx.DB.Model(&group_models.GroupUserMsgDeleteModel{}).Select("msg_id").
+		Where("group_id = ? and user_id = ?", req.ID, req.UserID).
+		Select("msg_id").Scan(&msgIDList)
 	groupMsgs, count, _ := list_query.ListQuery(l.svcCtx.DB, group_models.GroupMsgModel{}, list_query.Option{
 		PageInfo: models.PageInfo{
 			Page:  req.Page,
 			Limit: req.Limit,
 		},
-		Where: l.svcCtx.DB.Where("id not in (?)", msgIDList),
+		Where: l.svcCtx.DB.Where("id not in ?", msgIDList),
+		Debug: true,
 	})
+	fmt.Println("id=", msgIDList)
+	fmt.Println("group_msg = ", groupMsgs)
 	var userIDList []uint32
 	for _, model := range groupMsgs {
 		userIDList = append(userIDList, uint32(model.SendUserID))
@@ -79,6 +86,9 @@ func (l *GroupHistoryLogic) GroupHistory(req *types.GroupHistoryRequest) (resp *
 		if err1 == nil {
 			info.UserNickname = userListResponse.UserInfo[uint32(model.SendUserID)].NickName
 			info.UserAvatar = userListResponse.UserInfo[uint32(model.SendUserID)].Avatar
+		}
+		if req.UserID == info.UserID {
+			info.IsMe = true
 		}
 		list = append(list, info)
 	}

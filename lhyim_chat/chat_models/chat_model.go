@@ -29,30 +29,5 @@ func (chat ChatModel) MsgPreviewMethod() string {
 		}
 		return "[系统消息]"
 	}
-	switch chat.Msg.Type {
-	case ctype.TextMsgType:
-		return chat.Msg.TextMsg.Content
-	case ctype.ImageMsgType:
-		return "[图片]"
-	case ctype.VideoMsgType:
-		return "[视频]"
-	case ctype.FileMsgType:
-		return "[文件]"
-	case ctype.VoiceMsgType:
-		return "[语音]"
-	case ctype.VoiceCallMsgType:
-		return "[视频通话]"
-	case ctype.VideoCallMsgType:
-		return "[撤回消息]"
-	case ctype.WithdrawMsgType:
-		return "[回复消息]"
-	case ctype.ReplyMsgType:
-		return "[回复消息]"
-	case ctype.QuoteMsgType:
-		return "[引用消息]"
-	default:
-		panic("unhandled default case")
-
-	}
-	return "[未知消息]"
+	return chat.Msg.MsgPreview()
 }

@@ -105,6 +105,34 @@ type Msg struct {
 	TipMsg       *TipMsg       `json:"tipMsg,omitempty"`       //提示消息，一般不入库
 }
 
+func (msg Msg) MsgPreview() string {
+	switch msg.Type {
+	case TextMsgType:
+		return msg.TextMsg.Content
+	case ImageMsgType:
+		return "[图片]"
+	case VideoMsgType:
+		return "[视频]"
+	case FileMsgType:
+		return "[文件]"
+	case VoiceMsgType:
+		return "[语音]"
+	case VoiceCallMsgType:
+		return "[视频通话]"
+	case VideoCallMsgType:
+		return "[撤回消息]"
+	case WithdrawMsgType:
+		return "[回复消息]"
+	case ReplyMsgType:
+		return "[回复消息]"
+	case QuoteMsgType:
+		return "[引用消息]"
+	default:
+		panic("unhandled default case")
+
+	}
+	return "[未知消息]"
+}
 func (c *Msg) Scan(val interface{}) error {
 	err := json.Unmarshal(val.([]byte), c)
 	if err != nil {
