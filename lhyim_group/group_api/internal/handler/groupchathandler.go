@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 	"lhyim_server/common/models/ctype"
 	"lhyim_server/common/response"
+	"lhyim_server/lhyim_chat/chat_models"
 	"lhyim_server/lhyim_group/group_api/internal/svc"
 	"lhyim_server/lhyim_group/group_api/internal/types"
 	"lhyim_server/lhyim_group/group_models"
@@ -125,6 +126,82 @@ func groupChatHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				SendTipMsg(conn, "你还不是这个群的成员呢")
 				//自己不是群成员
 				continue
+			}
+			switch request.Msg.Type {
+			case ctype.WithdrawMsgType: //撤回消息
+				//拿到消息
+				withdrawMsg := request.Msg.WithdrawMsg
+				if withdrawMsg == nil {
+					SendTipMsg(conn, "撤回消息的格式错误")
+					continue
+				}
+				if withdrawMsg.MsgID == 0 {
+					SendTipMsg(conn, "撤回消息id为空")
+					continue
+					//找到消息
+				}
+				var groupMsg group_models.GroupMsgModel
+				err = svcCtx.DB.Take(&groupMsg, "group_id = ? and id = ?", request.GroupID, withdrawMsg.MsgID).Error
+				if err != nil {
+					SendTipMsg(conn, "原消息不存在")
+					continue
+				}
+				//原消息不能是撤回消息
+				if groupMsg.MsgType == ctype.WithdrawMsgType {
+					SendTipMsg(conn, "该消息已撤回")
+					continue
+				}
+				//拿我在这个群的角色
+				if member.Role == 3 {
+					if req.UserID != groupMsg.SendUserID {
+						SendTipMsg(conn, "普通用户只能撤回自己的消息")
+						continue
+					}
+					if req.UserID == groupMsg.SendUserID {
+						now := time.Now()
+						if now.Sub(groupMsg.CreatedAt) > 2*time.Minute {
+							SendTipMsg(conn, "只能撤回两分钟以内的消息")
+							continue
+						}
+					}
+				}
+				//如果自己撤回自己的
+
+				//如果是群主或者管理员，可以撤回自己的，没有时间限制
+				//查这个消息的用户在这个群里的角色
+				var msgUserRole int8 = 3
+				svcCtx.DB.Model(&group_models.GroupMemberModel{}).
+					Where("group_id = ? and user_id = ?", request.GroupID, groupMsg.SendUserID).Select("role").Scan(&msgUserRole)
+
+				//用户退群的情况
+
+				if member.Role == 2 {
+					if msgUserRole == 1 || (msgUserRole == 2 && req.UserID != groupMsg.SendUserID) {
+						SendTipMsg(conn, "管理员只能撤回自己或者普通用户的消息")
+						continue
+					}
+				}
+				//消息可以撤回了
+				//修改原消息
+				var content = "撤回了一条消息"
+
+				content = "你" + content
+				originMsg := groupMsg.Msg
+				originMsg.WithdrawMsg = nil //这里可能会出现循环引用
+				//self
+				request.Msg.WithdrawMsg.Content = content
+				svcCtx.DB.Model(&groupMsg).Updates(chat_models.ChatModel{
+					MsgPreview: "[撤回消息]-" + content,
+					MsgType:    ctype.WithdrawMsgType,
+					Msg: ctype.Msg{
+						Type: ctype.WithdrawMsgType,
+						WithdrawMsg: &ctype.WithdrawMsg{
+							Content:   content,
+							MsgID:     request.Msg.WithdrawMsg.MsgID,
+							OriginMsg: &originMsg,
+						},
+					},
+				})
 			}
 			msgID := InsetMsg(svcCtx.DB, conn, request.GroupID, req.UserID, request.Msg)
 			//遍历这个用户列表，去找ws的客户端

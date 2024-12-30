@@ -36,7 +36,7 @@ type SessionData struct {
 
 func (l *GroupSessionLogic) GroupSession(req *types.GroupSessionRequest) (resp *types.GroupSessionResponse, err error) {
 	// 先查我有哪些群
-	var userGroupIDList []uint
+	var userGroupIDList = []uint{0}
 	l.svcCtx.DB.Model(group_models.GroupMemberModel{}).
 		Where("user_id = ?", req.UserID).
 		Select("group_id").Scan(&userGroupIDList)
@@ -44,7 +44,7 @@ func (l *GroupSessionLogic) GroupSession(req *types.GroupSessionRequest) (resp *
 	column := fmt.Sprintf(" (if((select 1 from group_user_top_models where user_id = %d and group_user_top_models.group_id = group_msg_models.group_id), 1, 0)) as isTop", req.UserID)
 
 	// 查哪些聊天记录是被删掉的
-	var msgDeleteIDList []uint
+	var msgDeleteIDList = []uint{0}
 	l.svcCtx.DB.Model(group_models.GroupUserMsgDeleteModel{}).Where("group_id in ?", userGroupIDList).Select("msg_id").Scan(&msgDeleteIDList)
 
 	sessionList, count, _ := list_query.ListQuery(l.svcCtx.DB, SessionData{}, list_query.Option{
