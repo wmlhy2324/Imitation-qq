@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 	"lhyim_server/common/models/ctype"
 	"lhyim_server/common/response"
+	"lhyim_server/common/service/redis_service"
 	"lhyim_server/lhyim_chat/chat_models"
 	"lhyim_server/lhyim_group/group_api/internal/svc"
 	"lhyim_server/lhyim_group/group_api/internal/types"
@@ -33,14 +34,15 @@ type ChatRequest struct {
 	Msg     ctype.Msg `json:"msg"` //
 }
 type ChatResponse struct {
-	UserID       uint          `json:"userID"`
-	UserNickname string        `json:"userNickname"`
-	UserAvatar   string        `json:"userAvatar"`
-	Msg          ctype.Msg     `json:"msg"`
-	ID           uint          `json:"id"`
-	CreatedAt    time.Time     `json:"createdAt"`
-	MsgType      ctype.MsgType `json:"msgType"`
-	IsMe         bool          `json:"isMe"`
+	UserID         uint          `json:"userID"`
+	UserNickname   string        `json:"userNickname"`
+	UserAvatar     string        `json:"userAvatar"`
+	Msg            ctype.Msg     `json:"msg"`
+	ID             uint          `json:"id"`
+	CreatedAt      time.Time     `json:"createdAt"`
+	MsgType        ctype.MsgType `json:"msgType"`
+	IsMe           bool          `json:"isMe"`
+	MemberNickname string        `json:"memberNickname"`
 }
 
 func groupChatHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
@@ -121,10 +123,20 @@ func groupChatHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			}
 			//判断自己是不是群成员
 			var member group_models.GroupMemberModel
-			err = svcCtx.DB.Take(&member, "user_id = ? and group_id = ?", req.UserID, request.GroupID).Error
+			err = svcCtx.DB.Preload("GroupModel").Take(&member, "user_id = ? and group_id = ?", req.UserID, request.GroupID).Error
 			if err != nil {
 				SendTipMsg(conn, "你还不是这个群的成员呢")
 				//自己不是群成员
+				continue
+			}
+			if member.GroupModel.IsProhibition {
+				//开启了全员禁言
+				SendTipMsg(conn, "当前群正在全员禁言中")
+				continue
+			}
+			//我是不是被禁言了
+			if member.GetProhibitionTime(svcCtx.Redis, svcCtx.DB) != nil {
+				SendTipMsg(conn, "当前用户禁言中")
 				continue
 			}
 			switch request.Msg.Type {
@@ -202,13 +214,72 @@ func groupChatHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 						},
 					},
 				})
+			case ctype.ReplyMsgType:
+				//先去校验
+				if request.Msg.ReplyMsg.MsgID == 0 || request.Msg.ReplyMsg == nil {
+					SendTipMsg(conn, "回复消息id需要填写")
+					continue
+				}
+				//找到这个原消息
+				var msgModel group_models.GroupMsgModel
+				err = svcCtx.DB.Take(&msgModel, "group_id = ? and id = ?", request.GroupID, request.Msg.ReplyMsg.MsgID).Error
+				if err != nil {
+					SendTipMsg(conn, "消息不存在")
+					continue
+				}
+				if msgModel.MsgType == ctype.WithdrawMsgType {
+					SendTipMsg(conn, "该消息已撤回")
+					continue
+				}
+
+				userBaseInfo, err5 := redis_service.GetUserBaseInfo(svcCtx.Redis, svcCtx.UserRpc, req.UserID)
+				if err5 != nil {
+					logx.Error(err5)
+					SendTipMsg(conn, err5.Error())
+					return
+				}
+				request.Msg.ReplyMsg.Msg = &msgModel.Msg
+				request.Msg.ReplyMsg.UserID = msgModel.SendUserID
+				request.Msg.ReplyMsg.UserNickName = userBaseInfo.Nickname
+				request.Msg.ReplyMsg.OriginMsgDate = msgModel.CreatedAt
+			case ctype.QuoteMsgType:
+				//先去校验
+				if request.Msg.QuoteMsg.MsgID == 0 || request.Msg.QuoteMsg == nil {
+					SendTipMsg(conn, "回复消息id需要填写")
+					continue
+				}
+				//找到这个原消息
+				var msgModel group_models.GroupMsgModel
+				err = svcCtx.DB.Take(&msgModel, "group_id = ? and id = ?", request.GroupID, request.Msg.QuoteMsg.MsgID).Error
+				if err != nil {
+					SendTipMsg(conn, "消息不存在")
+					continue
+				}
+				if msgModel.MsgType == ctype.WithdrawMsgType {
+					SendTipMsg(conn, "该消息已撤回")
+					continue
+				}
+
+				userBaseInfo, err5 := redis_service.GetUserBaseInfo(svcCtx.Redis, svcCtx.UserRpc, req.UserID)
+				if err5 != nil {
+					logx.Error(err5)
+					SendTipMsg(conn, err5.Error())
+					return
+				}
+				request.Msg.QuoteMsg.Msg = &msgModel.Msg
+				request.Msg.QuoteMsg.UserID = msgModel.SendUserID
+				request.Msg.QuoteMsg.UserNickName = userBaseInfo.Nickname
+				request.Msg.QuoteMsg.OriginMsgDate = msgModel.CreatedAt
 			}
-			msgID := InsetMsg(svcCtx.DB, conn, request.GroupID, req.UserID, request.Msg)
+
+			msgID := InsetMsg(svcCtx.DB, conn, member, request.Msg)
 			//遍历这个用户列表，去找ws的客户端
-			sendGroupOnlineUserMsg(svcCtx.DB, request.GroupID, req.UserID, request.Msg, msgID)
+			sendGroupOnlineUserMsg(svcCtx.DB, member, request.Msg, msgID)
 			fmt.Println(string(p))
 		}
+
 	}
+
 }
 func getOnlineUserIDList() (userOnlineIDList []uint) {
 	for u := range UserOnlineWsMap {
@@ -234,21 +305,23 @@ func SendTipMsg(conn *websocket.Conn, msg string) {
 }
 
 // 这个群的用户发消息
-func sendGroupOnlineUserMsg(db *gorm.DB, groupID uint, userID uint, msg ctype.Msg, msgID uint) {
+func sendGroupOnlineUserMsg(db *gorm.DB, member group_models.GroupMemberModel, msg ctype.Msg, msgID uint) {
 	userOnlineIDList := getOnlineUserIDList()
 	//去查这个群的成员，并且在线
 	var groupMemberOnlineIDList []uint
-	db.Model(&group_models.GroupMemberModel{}).Where("group_id = ? and user_id in (?)", groupID, userOnlineIDList).
+	db.Model(&group_models.GroupMemberModel{}).Where("group_id = ? and user_id in (?)", member.GroupID, userOnlineIDList).
 		Select("user_id").Scan(&groupMemberOnlineIDList)
 	//构造响应
 	var chatResponse = ChatResponse{
-		UserID:    userID,
-		Msg:       msg,
-		ID:        msgID,
-		MsgType:   msg.Type,
-		CreatedAt: time.Now(),
+		UserID:         member.UserID,
+		Msg:            msg,
+		ID:             msgID,
+		MsgType:        msg.Type,
+		CreatedAt:      time.Now(),
+		MemberNickname: member.MemberNickname,
 	}
-	wsInfo, ok := UserOnlineWsMap[userID]
+
+	wsInfo, ok := UserOnlineWsMap[member.UserID]
 	if ok {
 		chatResponse.UserNickname = wsInfo.UserInfo.Nickname
 		chatResponse.UserAvatar = wsInfo.UserInfo.Avatar
@@ -260,7 +333,7 @@ func sendGroupOnlineUserMsg(db *gorm.DB, groupID uint, userID uint, msg ctype.Ms
 			continue
 		}
 		chatResponse.IsMe = false
-		if wsUserInfo.UserInfo.ID == userID {
+		if wsUserInfo.UserInfo.ID == member.UserID {
 			chatResponse.IsMe = true
 		}
 		byteDate, _ := json.Marshal(chatResponse)
@@ -270,15 +343,16 @@ func sendGroupOnlineUserMsg(db *gorm.DB, groupID uint, userID uint, msg ctype.Ms
 		}
 	}
 }
-func InsetMsg(db *gorm.DB, conn *websocket.Conn, groupId uint, userID uint, msg ctype.Msg) uint {
+func InsetMsg(db *gorm.DB, conn *websocket.Conn, member group_models.GroupMemberModel, msg ctype.Msg) uint {
 	switch msg.Type {
 	case ctype.WithdrawMsgType:
 		logx.Infof("撤回消息不入库")
 		return 0
 	}
 	groupMsg := group_models.GroupMsgModel{
-		GroupID:    groupId,
-		SendUserID: userID,
+		GroupID:    member.GroupID,
+		SendUserID: member.UserID,
+		MemberID:   member.ID,
 		MsgType:    msg.Type,
 		Msg:        msg,
 	}

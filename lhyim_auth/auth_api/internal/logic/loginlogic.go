@@ -3,14 +3,14 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
 	"lhyim_server/lhyim_auth/auth_models"
 	"lhyim_server/utils/jwts"
 	"lhyim_server/utils/pwd"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"lhyim_server/lhyim_auth/auth_api/internal/svc"
 	"lhyim_server/lhyim_auth/auth_api/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type LoginLogic struct {
@@ -28,6 +28,7 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 }
 
 func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, err error) {
+	fmt.Println(l.ctx.Value("clientIP"), l.ctx.Value("User-ID"))
 	var user auth_models.UserModel
 	err = l.svcCtx.DB.Take(&user, "id = ?", req.Username).Error
 	if err != nil {
@@ -49,5 +50,10 @@ func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, 
 		err = errors.New("服务器内部错误,生成token失败")
 		return
 	}
+	err = l.svcCtx.KqPusherClient.Push(l.ctx, fmt.Sprintf("%s用户登录成功", user.Nickname))
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	return &types.LoginResponse{Token: token}, nil
 }

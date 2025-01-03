@@ -2,6 +2,7 @@ package svc
 
 import (
 	"github.com/go-redis/redis"
+	"github.com/zeromicro/go-queue/kq"
 	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/gorm"
 	"lhyim_server/core"
@@ -12,19 +13,21 @@ import (
 )
 
 type ServiceContext struct {
-	Config  config.Config
-	DB      *gorm.DB
-	Redis   *redis.Client
-	UserRpc user_rpc.UsersClient
+	Config         config.Config
+	DB             *gorm.DB
+	Redis          *redis.Client
+	UserRpc        user_rpc.UsersClient
+	KqPusherClient *kq.Pusher
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
 	MysqlDB := core.InitGorm(c.Mysql.DataSource)
 	client := core.InitRedis(c.Redis.Addr, c.Redis.Password, c.Redis.DB)
 	return &ServiceContext{
-		Config:  c,
-		DB:      MysqlDB,
-		Redis:   client,
-		UserRpc: users.NewUsers(zrpc.MustNewClient(c.UserRpc)),
+		Config:         c,
+		DB:             MysqlDB,
+		Redis:          client,
+		UserRpc:        users.NewUsers(zrpc.MustNewClient(c.UserRpc)),
+		KqPusherClient: kq.NewPusher(c.KqPusherConf.Brokers, c.KqPusherConf.Topic),
 	}
 }

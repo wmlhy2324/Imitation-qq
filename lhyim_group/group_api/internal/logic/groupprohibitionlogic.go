@@ -3,7 +3,9 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
 	"lhyim_server/lhyim_group/group_models"
+	"time"
 
 	"lhyim_server/lhyim_group/group_api/internal/svc"
 	"lhyim_server/lhyim_group/group_api/internal/types"
@@ -45,5 +47,15 @@ func (l *GroupProhibitionLogic) GroupProhibition(req *types.GroupProhibitionRequ
 		return nil, errors.New("角色权限错误")
 	}
 	l.svcCtx.DB.Model(&member1).Update("prohibition_time", req.ProhibitionTime)
+
+	//利用redis的过期时间去做禁言时间
+	key := fmt.Sprintf("prohibition_%d", member1.ID)
+	if req.ProhibitionTime != nil {
+		//给redis设置一个key，过期时间是
+
+		l.svcCtx.Redis.Set(key, "time", time.Duration(*req.ProhibitionTime)*time.Second)
+	} else {
+		l.svcCtx.Redis.Del(key)
+	}
 	return
 }

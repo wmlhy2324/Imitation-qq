@@ -3,7 +3,6 @@ package logic
 import (
 	"context"
 	"errors"
-	"fmt"
 	"lhyim_server/common/list_query"
 	"lhyim_server/common/models"
 	"lhyim_server/common/models/ctype"
@@ -32,14 +31,15 @@ func NewGroupHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Grou
 }
 
 type HistoryResponse struct {
-	UserID       uint      `json:"userID"`
-	UserNickname string    `json:"userNickname"`
-	UserAvatar   string    `json:"userAvatar"`
-	Msg          ctype.Msg `json:"msg"`
-	ID           uint      `json:"id"`
-	CreatedAt    time.Time `json:"createdAt"`
-	MsgType      int8      `json:"msgType"`
-	IsMe         bool      `json:"isMe"`
+	UserID         uint      `json:"userID"`
+	UserNickname   string    `json:"userNickname"`
+	UserAvatar     string    `json:"userAvatar"`
+	Msg            ctype.Msg `json:"msg"`
+	ID             uint      `json:"id"`
+	CreatedAt      time.Time `json:"createdAt"`
+	MsgType        int8      `json:"msgType"`
+	IsMe           bool      `json:"isMe"`
+	MemberNickname string    `json:"memberNickname"` //群用户备注
 }
 type HistoryListResponse struct {
 	List  []HistoryResponse `json:"list"`
@@ -60,12 +60,12 @@ func (l *GroupHistoryLogic) GroupHistory(req *types.GroupHistoryRequest) (resp *
 		PageInfo: models.PageInfo{
 			Page:  req.Page,
 			Limit: req.Limit,
+			Sort:  "created_at desc",
 		},
-		Where: l.svcCtx.DB.Where("id not in ?", msgIDList),
-		Debug: true,
+		Where:   l.svcCtx.DB.Where("id not in ?", msgIDList),
+		Preload: []string{"MemberModel"},
 	})
-	fmt.Println("id=", msgIDList)
-	fmt.Println("group_msg = ", groupMsgs)
+
 	var userIDList []uint32
 	for _, model := range groupMsgs {
 		userIDList = append(userIDList, uint32(model.SendUserID))
@@ -82,6 +82,9 @@ func (l *GroupHistoryLogic) GroupHistory(req *types.GroupHistoryRequest) (resp *
 			ID:        model.ID,
 			CreatedAt: model.CreatedAt,
 			MsgType:   int8(model.MsgType),
+		}
+		if model.MemberModel != nil {
+			info.MemberNickname = model.MemberModel.MemberNickname
 		}
 		if err1 == nil {
 			info.UserNickname = userListResponse.UserInfo[uint32(model.SendUserID)].NickName

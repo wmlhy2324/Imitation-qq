@@ -1,0 +1,12 @@
+syntax = "v1"
+
+type logListRequest {}
+
+type logListResponse {}
+
+service logs {
+	@handler logList
+	get /api/logs/logs (logListRequest) returns (logListResponse)
+}
+
+//goctl api go -api logs_api.api -dir . --home ../../template
