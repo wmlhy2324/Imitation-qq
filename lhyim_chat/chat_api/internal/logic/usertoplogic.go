@@ -29,7 +29,7 @@ func (l *UserTopLogic) UserTop(req *types.UserTopRequest) (resp *types.UserTopRe
 
 	//是否是好友
 	if req.UserID != req.FriendID {
-		res, err := l.svcCtx.UserRpc.IsFriend(context.Background(), &user_rpc.IsFriendRequest{
+		res, err := l.svcCtx.UserRpc.IsFriend(l.ctx, &user_rpc.IsFriendRequest{
 			User1: uint32(req.UserID),
 			User2: uint32(req.FriendID),
 		})

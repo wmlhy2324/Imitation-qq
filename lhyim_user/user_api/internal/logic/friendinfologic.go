@@ -32,7 +32,7 @@ func (l *FriendInfoLogic) FriendInfo(req *types.FriendInfoRequest) (resp *types.
 	if !friend.IsFriend(l.svcCtx.DB, req.UserID, req.FriendID) {
 		return nil, errors.New("非好友")
 	}
-	res, err := l.svcCtx.UserRpc.UserInfo(context.Background(), &user_rpc.UserInfoRequest{
+	res, err := l.svcCtx.UserRpc.UserInfo(l.ctx, &user_rpc.UserInfoRequest{
 		UserId: uint32(req.FriendID),
 	})
 	if err != nil {

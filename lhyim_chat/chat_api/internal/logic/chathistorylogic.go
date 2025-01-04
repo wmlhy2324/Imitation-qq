@@ -46,7 +46,7 @@ type ChatHistoryResponse struct {
 func (l *ChatHistoryLogic) ChatHistory(req *types.ChatHistoryRequest) (resp *ChatHistoryResponse, err error) {
 	//是否是好友
 	if req.UserID != req.FriendID {
-		res, err := l.svcCtx.UserRpc.IsFriend(context.Background(), &user_rpc.IsFriendRequest{
+		res, err := l.svcCtx.UserRpc.IsFriend(l.ctx, &user_rpc.IsFriendRequest{
 			User1: uint32(req.UserID),
 			User2: uint32(req.FriendID),
 		})
@@ -77,7 +77,7 @@ func (l *ChatHistoryLogic) ChatHistory(req *types.ChatHistoryRequest) (resp *Cha
 	//去重
 	userIDList = utils.DeduplicatoionList(userIDList)
 	//去调用户服务的rpc方法，获取用户信息
-	response, err := l.svcCtx.UserRpc.UserListInfo(context.Background(), &user_rpc.UserListInfoRequest{UserIdList: userIDList})
+	response, err := l.svcCtx.UserRpc.UserListInfo(l.ctx, &user_rpc.UserListInfoRequest{UserIdList: userIDList})
 	if err != nil {
 		logx.Error(err)
 		return nil, errors.New("用户服务错误")

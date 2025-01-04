@@ -5,6 +5,7 @@ import (
 	"github.com/zeromicro/go-queue/kq"
 	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/gorm"
+	"lhyim_server/common/grpc_interceptor"
 	"lhyim_server/core"
 	"lhyim_server/lhyim_auth/auth_api/internal/config"
 
@@ -27,7 +28,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:         c,
 		DB:             MysqlDB,
 		Redis:          client,
-		UserRpc:        users.NewUsers(zrpc.MustNewClient(c.UserRpc)),
+		UserRpc:        users.NewUsers(zrpc.MustNewClient(c.UserRpc, zrpc.WithUnaryClientInterceptor(grpc_interceptor.ClientInfoInterceptor))),
 		KqPusherClient: kq.NewPusher(c.KqPusherConf.Brokers, c.KqPusherConf.Topic),
 	}
 }

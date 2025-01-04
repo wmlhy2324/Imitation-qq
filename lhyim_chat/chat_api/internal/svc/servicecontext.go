@@ -4,6 +4,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/gorm"
+	"lhyim_server/common/grpc_interceptor"
 	"lhyim_server/core"
 	"lhyim_server/lhyim_chat/chat_api/internal/config"
 	"lhyim_server/lhyim_file/file_rpc/files"
@@ -26,8 +27,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:  c,
 		DB:      mysqlDB,
-		UserRpc: users.NewUsers(zrpc.MustNewClient(c.UserRpc)),
+		UserRpc: users.NewUsers(zrpc.MustNewClient(c.UserRpc, zrpc.WithUnaryClientInterceptor(grpc_interceptor.ClientInfoInterceptor))),
 		Redis:   client,
-		FileRpc: files.NewFiles(zrpc.MustNewClient(c.FileRpc)),
+		FileRpc: files.NewFiles(zrpc.MustNewClient(c.FileRpc, zrpc.WithUnaryClientInterceptor(grpc_interceptor.ClientInfoInterceptor))),
 	}
 }

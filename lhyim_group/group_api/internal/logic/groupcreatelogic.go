@@ -64,7 +64,7 @@ func (l *GroupCreateLogic) GroupCreate(req *types.GroupCreateRequest) (resp *typ
 			groupUserList = append(groupUserList, u)
 		}
 		//选择的用户id必须都是我的好友
-		friendListResponse, err := l.svcCtx.UserRpc.FriendList(context.Background(), &user_rpc.FriendListRequest{
+		friendListResponse, err := l.svcCtx.UserRpc.FriendList(l.ctx, &user_rpc.FriendListRequest{
 			UserId: uint32(req.UserID),
 		})
 		if err != nil {
@@ -82,7 +82,7 @@ func (l *GroupCreateLogic) GroupCreate(req *types.GroupCreateRequest) (resp *typ
 		if len(slice) != 0 {
 			return nil, errors.New("选择的好友中不是你的好友")
 		}
-		userListResponse, err := l.svcCtx.UserRpc.UserListInfo(context.Background(), &user_rpc.UserListInfoRequest{
+		userListResponse, err := l.svcCtx.UserRpc.UserListInfo(l.ctx, &user_rpc.UserListInfoRequest{
 			UserIdList: userIDList,
 		})
 		if err != nil {

@@ -69,7 +69,7 @@ func (l *ChatSessionLogic) ChatSession(req *types.ChatSessionRequest) (resp *typ
 			userIDList = append(userIDList, uint32(req.UserID))
 		}
 	}
-	response, err := l.svcCtx.UserRpc.UserListInfo(context.Background(), &user_rpc.UserListInfoRequest{UserIdList: userIDList})
+	response, err := l.svcCtx.UserRpc.UserListInfo(l.ctx, &user_rpc.UserListInfoRequest{UserIdList: userIDList})
 	if err != nil {
 		logx.Error(err)
 		return nil, errors.New("用户服务错误")

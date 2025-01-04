@@ -62,7 +62,7 @@ func (l *Open_loginLogic) Open_login(req *types.OpenLoginRequest) (resp *types.L
 	if err != nil {
 		//如果没有查到用户，说明是第一次登录，需要注册
 		fmt.Println("注册逻辑")
-		res, err := l.svcCtx.UserRpc.UserCreate(context.Background(), &user_rpc.UserCreateRequest{
+		res, err := l.svcCtx.UserRpc.UserCreate(l.ctx, &user_rpc.UserCreateRequest{
 
 			NickName:       info.Nickname,
 			Password:       "",

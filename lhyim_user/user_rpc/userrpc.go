@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"lhyim_server/common/grpc_interceptor"
 
 	"lhyim_server/lhyim_user/user_rpc/internal/config"
 	"lhyim_server/lhyim_user/user_rpc/internal/server"
@@ -33,7 +34,7 @@ func main() {
 		}
 	})
 	defer s.Stop()
-
+	s.AddUnaryInterceptors(grpc_interceptor.ServerInfoInterceptor)
 	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
 	s.Start()
 }

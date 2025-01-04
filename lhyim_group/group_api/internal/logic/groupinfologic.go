@@ -90,7 +90,7 @@ func (l *GroupInfoLogic) GroupInfo(req *types.GroupInfoRequest) (resp *types.Gro
 	resp.AdminList = AdminList
 	//算在线用户总个数
 	//用户服务需要去写一个
-	userOnlineResponse, err := l.svcCtx.UserRpc.UserOnlineList(context.Background(), &user_rpc.UserOnlineRequest{})
+	userOnlineResponse, err := l.svcCtx.UserRpc.UserOnlineList(l.ctx, &user_rpc.UserOnlineRequest{})
 	if err == nil {
 		//算群成员与总在线人员取交集
 
