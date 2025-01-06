@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/zeromicro/go-zero/core/service"
+	"lhyim_server/common/middleware"
 	"lhyim_server/lhyim_logs/logs_api/internal/mqs"
 
 	"lhyim_server/lhyim_logs/logs_api/internal/config"
@@ -28,13 +29,14 @@ func main() {
 
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)
+	server.Use(middleware.LogMiddleware)
 	serviceGroup := service.NewServiceGroup()
 	defer serviceGroup.Stop()
-
+	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	for _, mq := range mqs.Consumers(c, context.Background(), ctx) {
 		serviceGroup.Add(mq)
 	}
 	serviceGroup.Start()
-	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
+
 	server.Start()
 }

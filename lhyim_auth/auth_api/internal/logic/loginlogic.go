@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"lhyim_server/lhyim_auth/auth_models"
-	"lhyim_server/utils/jwts"
-	"lhyim_server/utils/pwd"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"lhyim_server/lhyim_auth/auth_api/internal/svc"
 	"lhyim_server/lhyim_auth/auth_api/internal/types"
+	"lhyim_server/lhyim_auth/auth_models"
+	"lhyim_server/utils/jwts"
+	"lhyim_server/utils/pwd"
 )
 
 type LoginLogic struct {
@@ -28,14 +27,19 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 }
 
 func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, err error) {
-	fmt.Println(l.ctx.Value("clientIP"), l.ctx.Value("User-ID"))
 	var user auth_models.UserModel
+	l.svcCtx.ActionLogs.IsRequest()
+	l.svcCtx.ActionLogs.Info("用户登录操作")
+	//这里也可以使用匿名函数来拿l.ctx的值
+	defer l.svcCtx.ActionLogs.Save(l.ctx)
 	err = l.svcCtx.DB.Take(&user, "id = ?", req.Username).Error
 	if err != nil {
 		err = errors.New("用户不存在")
 		return
 	}
+	l.svcCtx.ActionLogs.SetItem("用户名", req.Username)
 	if !pwd.CheckHash(user.Pwd, req.Password) {
+		l.svcCtx.ActionLogs.Err("用户名错误或者密码错误")
 		err = errors.New("用户名错误或者密码错误")
 		return
 	}
@@ -47,13 +51,11 @@ func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, 
 	}, l.svcCtx.Config.Auth.AccessSecret, l.svcCtx.Config.Auth.AccessExpire)
 	if err != nil {
 		logx.Error(err)
+		l.svcCtx.ActionLogs.Err("服务内部错误")
 		err = errors.New("服务器内部错误,生成token失败")
 		return
 	}
-	err = l.svcCtx.KqPusherClient.Push(l.ctx, fmt.Sprintf("%s用户登录成功", user.Nickname))
-	if err != nil {
-		fmt.Println(err)
-	}
-
+	ctx := context.WithValue(l.ctx, "userID", fmt.Sprintf("%d", user.ID))
+	l.svcCtx.ActionLogs.SetCtx(ctx)
 	return &types.LoginResponse{Token: token}, nil
 }
