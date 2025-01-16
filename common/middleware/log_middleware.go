@@ -7,17 +7,35 @@ import (
 	"net/http"
 )
 
+type Writer struct {
+	http.ResponseWriter
+	Body []byte
+}
+
+func (w *Writer) Write(data []byte) (int, error) {
+	w.Body = append(w.Body, data...)
+	return w.ResponseWriter.Write(data)
+}
 func LogActionMiddleware(pusher *log_stash.Pusher) func(next http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			//设置入参
 			pusher.SetRequest(r)
+			pusher.SetHeader(r)
 
 			clientIP := httpx.GetRemoteAddr(r)
 			ctx := context.WithValue(r.Context(), "userID", r.Header.Get("User-ID"))
 			ctx = context.WithValue(ctx, "clientIP", clientIP)
-			next(w, r.WithContext(ctx))
+			var nw = Writer{
+				ResponseWriter: w,
+			}
+			next(&nw, r.WithContext(ctx))
 			//设置响应
+			if pusher.GetResponse() {
+				//读响应体
+				pusher.SetResponse(string(nw.Body))
+			}
+
 		}
 	}
 }

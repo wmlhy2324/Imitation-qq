@@ -29,6 +29,8 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, err error) {
 	var user auth_models.UserModel
 	l.svcCtx.ActionLogs.IsRequest()
+	l.svcCtx.ActionLogs.IsResponse()
+	l.svcCtx.ActionLogs.IsHeader()
 	l.svcCtx.ActionLogs.Info("用户登录操作")
 	//这里也可以使用匿名函数来拿l.ctx的值
 	defer l.svcCtx.ActionLogs.Save(l.ctx)

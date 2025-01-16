@@ -14,21 +14,36 @@ import (
 )
 
 type Pusher struct {
-	LogType   int8   `json:"logType"` //2操作日志 2运行日志
-	IP        string `json:"ip"`
-	UserID    uint   `json:"userID"`
-	Level     string `json:"level"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	Service   string `json:"service"` //记录微服务的名称
-	client    *kq.Pusher
-	items     []string
-	ctx       context.Context
-	isRequest bool
+	LogType    int8   `json:"logType"` //2操作日志 2运行日志
+	IP         string `json:"ip"`
+	UserID     uint   `json:"userID"`
+	Level      string `json:"level"`
+	Title      string `json:"title"`
+	Content    string `json:"content"`
+	Service    string `json:"service"` //记录微服务的名称
+	client     *kq.Pusher
+	items      []string
+	ctx        context.Context
+	isRequest  bool
+	isHeader   bool
+	isResponse bool
+	request    string
+	headers    string
+	response   string
+	count      int
 }
 
 func (p *Pusher) IsRequest() {
 	p.isRequest = true
+}
+func (p *Pusher) IsHeader() {
+	p.isHeader = true
+}
+func (p *Pusher) IsResponse() {
+	p.isResponse = true
+}
+func (p *Pusher) GetResponse() bool {
+	return p.isResponse
 }
 func (p *Pusher) SetRequest(r *http.Request) {
 	// 请求头
@@ -42,7 +57,7 @@ func (p *Pusher) SetRequest(r *http.Request) {
 	byteData, _ := io.ReadAll(r.Body)
 	r.Body = io.NopCloser(bytes.NewBuffer(byteData))
 
-	p.items = append(p.items, fmt.Sprintf(
+	p.request = fmt.Sprintf(
 		`<div class="log_request">
             <div class="log_request_head">
                 <span class="log_request_method %s">%s</span>
@@ -52,7 +67,23 @@ func (p *Pusher) SetRequest(r *http.Request) {
                 <pre class="log_json_body">%s</pre>
             </div>
         </div>`,
-		strings.ToLower(method), method, path, string(byteData)))
+		strings.ToLower(method), method, path, string(byteData))
+}
+func (p *Pusher) SetHeader(r *http.Request) {
+	byteData, _ := json.Marshal(r.Header)
+	format := fmt.Sprintf(`<div class="log_request_header">
+<div class="log_request_body">
+<pre class="log_json_body">%s</pre>
+</div>
+</div>`, string(byteData))
+
+	// 使用 fmt.Sprintf 进行格式化
+
+	p.headers = format
+}
+func (p *Pusher) SetResponse(w string) {
+	p.response = fmt.Sprintf("<div class=\"log_response\">\n <pre class=\"log_json_body\">%s</pre>\n</div>", w)
+	p.Save(p.ctx)
 }
 func (p *Pusher) SetCtx(ctx context.Context) {
 	p.ctx = ctx
@@ -70,29 +101,45 @@ func (p *Pusher) Err(title string) {
 	p.Level = "err"
 }
 func (p *Pusher) Save(ctx context.Context) {
+	if p.isResponse && p.count == 0 {
+		p.count = 1
+		return
+	}
 	if p.ctx == nil {
 		p.ctx = ctx
+	}
+	if ctx == nil {
+		p.ctx = context.Background()
 	}
 	if p.client == nil {
 		return
 	}
-	if len(p.items) > 0 {
-		for _, item := range p.items {
-			if !p.isRequest {
-				if strings.Contains(item, "log_request") {
-					continue
-				}
-			}
-			p.Content += item
-		}
-		p.items = []string{}
+	var items []string
+	if p.isRequest {
+		items = append(items, p.request)
 	}
+	if p.isHeader {
+		items = append(items, p.headers)
+	}
+	items = append(items, p.items...)
+	if p.isResponse {
+		items = append(items, p.response)
+	}
+	for _, item := range items {
+
+		p.Content += item
+	}
+	p.items = []string{}
+
 	userID := p.ctx.Value("userID")
 	var ui int
 	if userID != nil {
 		ui, _ = strconv.Atoi(userID.(string))
 	}
-	clientIP := p.ctx.Value("clientIP").(string)
+	clientIP, ok := p.ctx.Value("clientIP").(string)
+	if ok {
+		p.IP = clientIP
+	}
 	p.UserID = uint(ui)
 	p.IP = clientIP
 	if p.Level == "" {
@@ -138,6 +185,11 @@ func (p *Pusher) setItem(level string, label string, val any) {
 	}
 	logItem := fmt.Sprintf("<div class=\"log_item %s\">%s</div>", level, str)
 	p.items = append(p.items, logItem)
+
+	if p.LogType == 3 {
+		//如果是运行日志，那就调一下发送
+		p.Save(p.ctx)
+	}
 }
 func NewActionPusher(client *kq.Pusher, serviceName string) *Pusher {
 	return NewPusher(client, serviceName, 2)

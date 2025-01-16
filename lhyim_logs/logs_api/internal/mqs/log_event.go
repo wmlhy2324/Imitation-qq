@@ -7,6 +7,7 @@ import (
 	"lhyim_server/lhyim_logs/logs_api/internal/svc"
 	"lhyim_server/lhyim_logs/logs_model"
 	"lhyim_server/lhyim_user/user_rpc/types/user_rpc"
+	"sync"
 )
 
 type LogEvent struct {
@@ -55,8 +56,26 @@ func (l *LogEvent) Consume(ctx context.Context, key, val string) error {
 		info.UserNickname = baseInfo.NickName
 		info.UserAvatar = baseInfo.Avatar
 	}
+	//判断是不是运行日志
+	if info.LogType == 3 {
+		//先查一下今天这个服务有没有日志，有的话就更新，没有就创建
+		var logModel = logs_model.LogModel{}
+		mutex := sync.Mutex{}
+		mutex.Lock()
+		err = l.svcCtx.DB.Take(&logModel, "log_type = ? and service = ? and to_days(created_at) = to_days(now())", 3, info.Service).Error
+		mutex.Unlock()
+		if err == nil {
+			//找到了
+			l.svcCtx.DB.Model(&logModel).Update("content", logModel.Content+"\n"+info.Content)
+			logx.Infof("运行日志 %s 更新成功", req.Title)
+			return nil
+		}
+	}
 	logx.Infof("LogEvent key :%s , val :%s", key, val)
+	mutex := sync.Mutex{}
+	mutex.Lock()
 	err = l.svcCtx.DB.Create(&info).Error
+	mutex.Unlock()
 	if err != nil {
 		logx.Error(err)
 		return nil
